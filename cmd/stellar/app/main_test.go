@@ -1,22 +1,15 @@
-package stellar
+package stellar_test
 
 import (
-	"bytes"
-	"context"
 	"testing"
 
 	. "github.com/warpfork/go-wish"
+
+	. "go.polydawn.net/stellar/examples/testutil"
 )
 
-func bufferedMain(args ...string) (int, string, string) {
-	stdout := &bytes.Buffer{}
-	stderr := &bytes.Buffer{}
-	exitCode := Main(context.Background(), args, nil, stdout, stderr)
-	return exitCode, stdout.String(), stderr.String()
-}
-
 func TestNoargsHelptext(t *testing.T) {
-	exitCode, stdout, stderr := bufferedMain("stellar")
+	exitCode, stdout, stderr := RunIntoBuffer("stellar")
 	Wish(t, exitCode, ShouldEqual, 0)
 	Wish(t, stdout, ShouldEqual, "")
 	Wish(t, stderr, ShouldEqual, Dedent(`
@@ -37,7 +30,7 @@ func TestNoargsHelptext(t *testing.T) {
 }
 
 func TestWrongCommandHelptext(t *testing.T) {
-	exitCode, stdout, stderr := bufferedMain("stellar", "not a command")
+	exitCode, stdout, stderr := RunIntoBuffer("stellar", "not a command")
 	Wish(t, exitCode, ShouldEqual, 1)
 	Wish(t, stdout, ShouldEqual, "")
 	Wish(t, stderr, ShouldEqual, Dedent(`
@@ -45,7 +38,7 @@ func TestWrongCommandHelptext(t *testing.T) {
 	`))
 
 	t.Run("also when asking for help", func(t *testing.T) {
-		exitCode, stdout, stderr := bufferedMain("stellar", "not a command", "-h")
+		exitCode, stdout, stderr := RunIntoBuffer("stellar", "not a command", "-h")
 		Wish(t, exitCode, ShouldEqual, 1)
 		Wish(t, stdout, ShouldEqual, "")
 		Wish(t, stderr, ShouldEqual, Dedent(`
