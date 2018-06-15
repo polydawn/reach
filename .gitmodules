@@ -10,3 +10,6 @@
 [submodule ".gopath/src/github.com/polydawn/refmt"]
 	path = .gopath/src/github.com/polydawn/refmt
 	url = https://github.com/polydawn/refmt
+[submodule ".gopath/src/github.com/urfave/cli"]
+	path = .gopath/src/github.com/urfave/cli
+	url = https://github.com/urfave/cli
