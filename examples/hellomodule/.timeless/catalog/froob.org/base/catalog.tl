@@ -1,5 +1,5 @@
 {
-	"catalogName": "froob.org/base",
+	"name": "froob.org/base",
 	"releases": [
 		{
 			"name": "v1",

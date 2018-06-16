@@ -9,6 +9,7 @@ import (
 	"github.com/urfave/cli"
 
 	"go.polydawn.net/go-timeless-api/funcs"
+	"go.polydawn.net/stellar/hitch"
 	"go.polydawn.net/stellar/layout"
 	"go.polydawn.net/stellar/module"
 )
@@ -48,6 +49,13 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 						for i, fullStepRef := range ord {
 							fmt.Fprintf(stderr, "  - %.2d: %s\n", i+1, fullStepRef)
 						}
+						pins, err := funcs.ResolvePins(*mod, hitch.FSCatalog{ti.CatalogRoot}.ViewCatalog)
+						if err != nil {
+							return err
+						}
+						_ = pins
+						// step step step!
+						// repeatr interface (plz mock, i guess)
 					case false:
 						panic("TODO")
 					}

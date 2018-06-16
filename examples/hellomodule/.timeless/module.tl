@@ -1,6 +1,6 @@
 {
 	"imports": {
-		"base": "catalog:base:v1:linux-amd64"
+		"base": "catalog:froob.org/base:v1:linux-amd64"
 	},
 	"steps": {
 		"main": {
