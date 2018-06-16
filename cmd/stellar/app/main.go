@@ -5,14 +5,11 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
 
-	"github.com/polydawn/refmt"
-	"github.com/polydawn/refmt/json"
 	"github.com/urfave/cli"
 
-	"go.polydawn.net/go-timeless-api"
 	"go.polydawn.net/stellar/layout"
+	"go.polydawn.net/stellar/module"
 )
 
 func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io.Writer) (exitCode int) {
@@ -34,17 +31,17 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 					if err != nil {
 						return err
 					}
-					f, err := os.Open(filepath.Join(ti.Root, "module.tl"))
-					if err != nil {
-						return err
+					switch ti.Singleton {
+					case true:
+						mod, err := module.LoadByPath(*ti, "module.tl")
+						if err != nil {
+							return err
+						}
+						_ = mod
+						fmt.Fprintf(stderr, "workspace loaded\n")
+					case false:
+						panic("TODO")
 					}
-					mod := api.Module{}
-					unm := refmt.NewUnmarshallerAtlased(json.DecodeOptions{}, f, api.Atlas_Module)
-					err = unm.Unmarshal(&mod)
-					if err != nil {
-						return err
-					}
-					fmt.Fprintf(stderr, "workspace loaded\n")
 					return nil
 				},
 			},
