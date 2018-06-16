@@ -44,6 +44,10 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 							return err
 						}
 						fmt.Fprintf(stderr, "module contains %d steps\n", len(ord))
+						fmt.Fprintf(stderr, "module evaluation plan order:\n")
+						for i, fullStepRef := range ord {
+							fmt.Fprintf(stderr, "  - %.2d: %s\n", i+1, fullStepRef)
+						}
 					case false:
 						panic("TODO")
 					}
