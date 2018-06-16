@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"sort"
 
 	"github.com/urfave/cli"
 
+	"go.polydawn.net/go-timeless-api"
 	"go.polydawn.net/go-timeless-api/funcs"
 	"go.polydawn.net/stellar/hitch"
 	"go.polydawn.net/stellar/layout"
@@ -53,7 +55,15 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 						if err != nil {
 							return err
 						}
-						_ = pins
+						fmt.Fprintf(stderr, "imports pinned to hashes:\n")
+						allSlotRefs := []api.SubmoduleSlotRef{}
+						for k, _ := range pins {
+							allSlotRefs = append(allSlotRefs, k)
+						}
+						sort.Sort(api.SubmoduleSlotRefList(allSlotRefs))
+						for _, k := range allSlotRefs {
+							fmt.Fprintf(stderr, "  - %q: %s\n", k, pins[k])
+						}
 						// step step step!
 						// repeatr interface (plz mock, i guess)
 					case false:
