@@ -8,6 +8,7 @@ import (
 
 	"github.com/urfave/cli"
 
+	"go.polydawn.net/go-timeless-api/funcs"
 	"go.polydawn.net/stellar/layout"
 	"go.polydawn.net/stellar/module"
 )
@@ -37,8 +38,12 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 						if err != nil {
 							return err
 						}
-						_ = mod
 						fmt.Fprintf(stderr, "workspace loaded\n")
+						ord, err := funcs.ModuleOrderStepsDeep(*mod)
+						if err != nil {
+							return err
+						}
+						fmt.Fprintf(stderr, "module contains %d steps\n", len(ord))
 					case false:
 						panic("TODO")
 					}
