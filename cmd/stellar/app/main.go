@@ -11,6 +11,7 @@ import (
 
 	"go.polydawn.net/go-timeless-api"
 	"go.polydawn.net/go-timeless-api/funcs"
+	"go.polydawn.net/go-timeless-api/repeatr/client/exec"
 	"go.polydawn.net/stellar/hitch"
 	"go.polydawn.net/stellar/layout"
 	"go.polydawn.net/stellar/module"
@@ -65,7 +66,21 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 							fmt.Fprintf(stderr, "  - %q: %s\n", k, pins[k])
 						}
 						// step step step!
-						// repeatr interface (plz mock, i guess)
+						exports, err := module.Evaluate(
+							context.Background(),
+							*mod,
+							ord,
+							pins,
+							repeatrclient.Run,
+						)
+						if err != nil {
+							return fmt.Errorf("evaluating module: %s", err)
+						}
+						fmt.Fprintf(stderr, "module eval complete.\n")
+						fmt.Fprintf(stderr, "module exports:\n")
+						for k, v := range exports {
+							fmt.Fprintf(stderr, "  - %q: %v\n", k, v)
+						}
 					case false:
 						panic("TODO")
 					}
@@ -81,7 +96,7 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 	}
 	if err := app.Run(args); err != nil {
 		exitCode = 1
-		fmt.Fprintf(stderr, "stellar: incorrect usage: %s", err)
+		fmt.Fprintf(stderr, "stellar: %s", err)
 	}
 	return
 }

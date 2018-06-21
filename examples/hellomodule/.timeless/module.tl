@@ -10,7 +10,7 @@
 				},
 				"action": {
 					"exec": [
-						"/bin/bash",
+						"/bin/bash", "-c",
 						"echo hello | tee /task/out"
 					]
 				},
