@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"go.polydawn.net/go-timeless-api"
+	"go.polydawn.net/go-timeless-api/funcs"
 	"go.polydawn.net/go-timeless-api/repeatr"
 )
 
@@ -21,30 +22,46 @@ func Evaluate(
 	pins map[api.SubmoduleSlotRef]api.WareID,
 	runTool repeatr.RunFunc,
 ) (_ map[api.ItemName]api.WareID, err error) {
-	return evaluate(ctx, "", mod, order, pins, runTool)
+	return evaluate(ctx, "", mod, order, map[api.SlotRef]api.WareID{}, pins, runTool)
 }
 
 func evaluate(
 	ctx context.Context,
 	ctxPth api.SubmoduleRef,
 	mod api.Module,
-	order []api.SubmoduleStepRef,
-	pins map[api.SubmoduleSlotRef]api.WareID,
+	order funcs.StepTree,
+	parentScope map[api.SlotRef]api.WareID,
+	pins funcs.Pins,
 	runTool repeatr.RunFunc,
 ) (_ map[api.ItemName]api.WareID, err error) {
 	// Initialize map of locally scoped inputs.
 	scope := map[api.SlotRef]api.WareID{}
-	for submSlotRef, pin := range pins {
-		if submSlotRef.SubmoduleRef != "" {
-			continue // imported by a deeper level, not in our scope.
+	var ok bool
+	for slotName, importRef := range mod.Imports {
+		switch ref2 := importRef.(type) {
+		case api.ImportRef_Catalog: // catalog references should already be resolved and handed to us in the pins map.
+			scope[api.SlotRef{"", slotName}], ok = pins[api.SubmoduleSlotRef{"", api.SlotRef{"", slotName}}]
+			if !ok {
+				return nil, fmt.Errorf("missing pin for import %q in module %s", slotName, ctxPth)
+			}
+		case api.ImportRef_Parent: // parent references pluck something out of the parent scope.
+			scope[api.SlotRef{"", slotName}], ok = parentScope[api.SlotRef(ref2)]
+			if !ok {
+				return nil, fmt.Errorf("missing pin for import %q in module %s", slotName, ctxPth)
+			}
+		case api.ImportRef_Ingest: // ingest references should *also* already be resolved and handed to us in the pins map.
+			scope[api.SlotRef{"", slotName}], ok = pins[api.SubmoduleSlotRef{"", api.SlotRef{"", slotName}}]
+			if !ok {
+				return nil, fmt.Errorf("missing pin for import %q in module %s", slotName, ctxPth)
+			}
 		}
-		scope[submSlotRef.SlotRef] = pin
 	}
 	// Loop over steps at this level.  Append scope map with each result.
 	for _, submStepRef := range order {
 		if submStepRef.SubmoduleRef != "" {
 			continue // belongs to a deeper level, handled by recursion already
 		}
+		fmt.Printf("steppin %v: %v\n", ctxPth, submStepRef)
 		switch step := mod.Steps[submStepRef.StepName].(type) {
 		case api.Operation:
 			boundOp := api.BoundOperation{
@@ -78,7 +95,21 @@ func evaluate(
 				return nil, fmt.Errorf("operation %q exit code %d -- eval halted", submStepRef.Contextualize(ctxPth), record.ExitCode)
 			}
 		case api.Module:
-			panic("TODO submodule eval")
+			submoduleResults, err := evaluate(
+				ctx,
+				ctxPth.Child(submStepRef.StepName),
+				step,
+				order.DetachSubtree(submStepRef.StepName),
+				scope,
+				pins.DetachSubtree(submStepRef.StepName),
+				runTool,
+			)
+			if err != nil {
+				return nil, err
+			}
+			for itemName := range step.Exports {
+				scope[api.SlotRef{submStepRef.StepName, api.SlotName(itemName)}] = submoduleResults[itemName]
+			}
 		case nil:
 			panic("order incongruity")
 		default:
