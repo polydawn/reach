@@ -51,7 +51,10 @@ func Resolve(ctx context.Context, ingestRef api.ImportRef_Ingest) (
 		case plumbing.SymbolicReference:
 			ref = refs[ref.Target()]
 		case plumbing.HashReference:
-			return &api.WareID{"git", ref.Hash().String()}, &api.WareSourcing{}, nil
+			wareID := api.WareID{"git", ref.Hash().String()}
+			ws := api.WareSourcing{}
+			ws.AppendByWare(wareID, api.WarehouseLocation("file://"+pth))
+			return &wareID, &ws, nil
 		default:
 			panic("git ingest: unknown ref type")
 		}
