@@ -3,6 +3,8 @@ package gitingest
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"gopkg.in/src-d/go-git.v4"
@@ -27,6 +29,14 @@ func Resolve(ctx context.Context, ingestRef api.ImportRef_Ingest) (
 	pth := refArgsHunks[0]
 	gitRefName := plumbing.ReferenceName(refArgsHunks[1])
 
+	// Absolutize repo path asap.
+	//  We're perfectly happy to work with relative paths as ingest params,
+	//  but it's a mess of unpleasantness to log and debug if we carry them.
+	pth, err := filepath.Abs(pth)
+	if len(refArgsHunks) != 2 {
+		return nil, nil, fmt.Errorf("catastrophe, cannot find cwd: %s", err)
+	}
+
 	// Open the repo.  (Currently we're only supporting local ones.)
 	r, err := git.PlainOpen(pth)
 	if err != nil {
@@ -43,6 +53,19 @@ func Resolve(ctx context.Context, ingestRef api.ImportRef_Ingest) (
 		refs[ref.Name()] = ref
 		return nil
 	})
+
+	// Get ready to return wareSourcing.
+	//  This is way more flustery than it should be.
+	//  The go-git `PlainOpen` API explicitly wants the workdir (so we should
+	//  probably stop using that, it's silly);
+	//  and later `rio` expects to be pointed at the gitdir (which is fragile;
+	//  I'd be fine with that doing the autodetect).
+	//  So, we do the gitdir append here.
+	//  And this should be reviewed and refactored together with rio's git warehousing code.
+	// If there's a .git dir... correct to that.
+	if _, err := os.Stat(pth + "/.git"); err == nil {
+		pth = pth + "/.git"
+	}
 
 	// Do lookup, resolving symbolics as necessary.
 	ref := refs[gitRefName]
