@@ -53,10 +53,13 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 						for i, fullStepRef := range ord {
 							fmt.Fprintf(stderr, "  - %.2d: %s\n", i+1, fullStepRef)
 						}
-						pins, ws, err := funcs.ResolvePins(*mod, hitch.FSCatalog{ti.CatalogRoot}.ViewCatalog, ingest.Resolve)
+						wareSourcing := api.WareSourcing{}
+						wareSourcing.AppendByPackType("tar", "ca+file://.timeless/warehouse/")
+						pins, pinWs, err := funcs.ResolvePins(*mod, hitch.FSCatalog{ti.CatalogRoot}.ViewCatalog, ingest.Resolve)
 						if err != nil {
 							return err
 						}
+						wareSourcing.Append(*pinWs)
 						fmt.Fprintf(stderr, "imports pinned to hashes:\n")
 						allSlotRefs := []api.SubmoduleSlotRef{}
 						for k, _ := range pins {
@@ -72,7 +75,7 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 							*mod,
 							ord,
 							pins,
-							*ws,
+							wareSourcing,
 							repeatrclient.Run,
 						)
 						if err != nil {

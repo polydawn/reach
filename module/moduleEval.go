@@ -85,7 +85,7 @@ func evaluate(
 			record, err := runTool(
 				ctx,
 				boundOp,
-				wareSourcing,
+				wareSourcing.PivotToInputs(boundOp),
 				repeatr.InputControl{}, // input control is always zero for build jobs.
 				mon,
 			)
