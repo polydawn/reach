@@ -20,9 +20,10 @@ func Evaluate(
 	mod api.Module,
 	order []api.SubmoduleStepRef,
 	pins map[api.SubmoduleSlotRef]api.WareID,
+	wareSourcing api.WareSourcing,
 	runTool repeatr.RunFunc,
 ) (_ map[api.ItemName]api.WareID, err error) {
-	return evaluate(ctx, "", mod, order, map[api.SlotRef]api.WareID{}, pins, runTool)
+	return evaluate(ctx, "", mod, order, map[api.SlotRef]api.WareID{}, pins, wareSourcing, runTool)
 }
 
 func evaluate(
@@ -32,6 +33,7 @@ func evaluate(
 	order funcs.StepTree,
 	parentScope map[api.SlotRef]api.WareID,
 	pins funcs.Pins,
+	wareSourcing api.WareSourcing,
 	runTool repeatr.RunFunc,
 ) (_ map[api.ItemName]api.WareID, err error) {
 	// Initialize map of locally scoped inputs.
@@ -80,7 +82,7 @@ func evaluate(
 			record, err := runTool(
 				ctx,
 				boundOp,
-				api.WareSourcing{},     // FUTURE: move beyond placeholder... possible this should come along with pins.
+				wareSourcing,
 				repeatr.InputControl{}, // input control is always zero for build jobs.
 				repeatr.Monitor{},
 			)
@@ -102,6 +104,7 @@ func evaluate(
 				order.DetachSubtree(submStepRef.StepName),
 				scope,
 				pins.DetachSubtree(submStepRef.StepName),
+				wareSourcing,
 				runTool,
 			)
 			if err != nil {

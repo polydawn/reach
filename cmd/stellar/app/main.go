@@ -13,6 +13,7 @@ import (
 	"go.polydawn.net/go-timeless-api/funcs"
 	"go.polydawn.net/go-timeless-api/repeatr/client/exec"
 	"go.polydawn.net/stellar/hitch"
+	"go.polydawn.net/stellar/ingest"
 	"go.polydawn.net/stellar/layout"
 	"go.polydawn.net/stellar/module"
 )
@@ -52,7 +53,7 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 						for i, fullStepRef := range ord {
 							fmt.Fprintf(stderr, "  - %.2d: %s\n", i+1, fullStepRef)
 						}
-						pins, err := funcs.ResolvePins(*mod, hitch.FSCatalog{ti.CatalogRoot}.ViewCatalog)
+						pins, ws, err := funcs.ResolvePins(*mod, hitch.FSCatalog{ti.CatalogRoot}.ViewCatalog, ingest.Resolve)
 						if err != nil {
 							return err
 						}
@@ -71,6 +72,7 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 							*mod,
 							ord,
 							pins,
+							*ws,
 							repeatrclient.Run,
 						)
 						if err != nil {
