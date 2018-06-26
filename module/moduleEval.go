@@ -3,10 +3,12 @@ package module
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"go.polydawn.net/go-timeless-api"
 	"go.polydawn.net/go-timeless-api/funcs"
 	"go.polydawn.net/go-timeless-api/repeatr"
+	"go.polydawn.net/go-timeless-api/repeatr/fmt"
 )
 
 // FUTURE: would be nice to have each step eval return futures, and then
@@ -79,13 +81,15 @@ func evaluate(
 				}
 				boundOp.InputPins[slotRef] = pin
 			}
+			mon, monWaitCh := repeatrfmt.ServeMonitor(repeatrfmt.NewAnsiPrinter(os.Stdout, os.Stderr))
 			record, err := runTool(
 				ctx,
 				boundOp,
 				wareSourcing,
 				repeatr.InputControl{}, // input control is always zero for build jobs.
-				repeatr.Monitor{},
+				mon,
 			)
+			<-monWaitCh
 			if err != nil {
 				return nil, fmt.Errorf("failed evaluating operation %q: %s", submStepRef.Contextualize(ctxPth), err)
 			}
