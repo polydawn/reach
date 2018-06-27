@@ -21,7 +21,8 @@ import (
 // FUTURE: a caching wrapper.
 
 var (
-	_ hitch.ViewCatalogTool = FSCatalog{}.ViewCatalog
+	_ hitch.ViewCatalogTool    = FSCatalog{}.ViewCatalog
+	_ hitch.ViewWarehousesTool = FSCatalog{}.ViewWarehouses
 )
 
 type FSCatalog struct {
@@ -46,6 +47,31 @@ func (cat FSCatalog) ViewCatalog(
 	if err != nil {
 		return
 	}
+	defer f.Close()
 	err = refmt.NewUnmarshallerAtlased(json.DecodeOptions{}, f, api.Atlas_Catalog).Unmarshal(&modCat)
 	return
+}
+
+func (cat FSCatalog) ViewWarehouses(
+	ctx context.Context,
+	modName api.ModuleName,
+) (ws *api.WareSourcing, err error) {
+	funcs.MustValidate(modName)
+
+	modPath := filepath.Join(cat.Root, string(modName))
+	if fi, err := os.Stat(modPath); err != nil || !fi.IsDir() {
+		return nil, fmt.Errorf("module not found: %q is not a dir.", modName)
+	}
+	mirrorFilePath := filepath.Join(modPath, "mirrors.tl")
+	if fi, err := os.Stat(mirrorFilePath); err != nil || !(fi.Mode()&os.ModeType == 0) {
+		return &api.WareSourcing{}, nil
+	}
+	f, err := os.Open(mirrorFilePath)
+	if err != nil {
+		return
+	}
+	defer f.Close()
+	err = refmt.NewUnmarshallerAtlased(json.DecodeOptions{}, f, api.Atlas_WareSourcing).Unmarshal(&ws)
+	return
+
 }

@@ -55,7 +55,8 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 						}
 						wareSourcing := api.WareSourcing{}
 						wareSourcing.AppendByPackType("tar", "ca+file://.timeless/warehouse/")
-						pins, pinWs, err := funcs.ResolvePins(*mod, hitch.FSCatalog{ti.CatalogRoot}.ViewCatalog, ingest.Resolve)
+						catalogHandle := hitch.FSCatalog{ti.CatalogRoot}
+						pins, pinWs, err := funcs.ResolvePins(*mod, catalogHandle.ViewCatalog, catalogHandle.ViewWarehouses, ingest.Resolve)
 						if err != nil {
 							return err
 						}
