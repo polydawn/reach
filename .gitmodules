@@ -55,3 +55,6 @@
 [submodule ".gopath/src/gopkg.in/src-d/go-git.v4"]
 	path = .gopath/src/gopkg.in/src-d/go-git.v4
 	url = https://gopkg.in/src-d/go-git.v4
+[submodule ".gopath/src/github.com/polydawn/go-errcat"]
+	path = .gopath/src/github.com/polydawn/go-errcat
+	url = https://github.com/polydawn/go-errcat

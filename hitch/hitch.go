@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/polydawn/go-errcat"
 	"github.com/polydawn/refmt"
 	"github.com/polydawn/refmt/json"
 
@@ -37,18 +38,27 @@ func (cat FSCatalog) ViewCatalog(
 
 	modPath := filepath.Join(cat.Root, string(modName))
 	if fi, err := os.Stat(modPath); err != nil || !fi.IsDir() {
-		return nil, fmt.Errorf("module not found: %q is not a dir.", modName)
+		return nil, errcat.Errorf(hitch.ErrNoSuchCatalog, "module not found: %q is not a dir", modName)
 	}
 	modCatPath := filepath.Join(modPath, "catalog.tl")
 	if fi, err := os.Stat(modCatPath); err != nil || !(fi.Mode()&os.ModeType == 0) {
-		return nil, fmt.Errorf("module catalog not found: no %s file under %q.", "catalog.tl", modName)
+		return nil, errcat.Errorf(hitch.ErrNoSuchCatalog, "module catalog not found: no %s file under %q.", "catalog.tl", modName)
 	}
 	f, err := os.Open(modCatPath)
 	if err != nil {
-		return
+		return nil, errcat.ErrorDetailed(hitch.ErrCorruptState, fmt.Sprintf("module catalog for %q cannot be opened: %s", api.ItemRef{modName, "", ""}.String(), err),
+			map[string]string{
+				"ref": api.ItemRef{modName, "", ""}.String(),
+			})
 	}
 	defer f.Close()
 	err = refmt.NewUnmarshallerAtlased(json.DecodeOptions{}, f, api.Atlas_Catalog).Unmarshal(&modCat)
+	if err != nil {
+		return nil, errcat.ErrorDetailed(hitch.ErrCorruptState, fmt.Sprintf("module catalog for %q cannot be opened: %s", api.ItemRef{modName, "", ""}.String(), err),
+			map[string]string{
+				"ref": api.ItemRef{modName, "", ""}.String(),
+			})
+	}
 	return
 }
 
@@ -60,7 +70,7 @@ func (cat FSCatalog) ViewWarehouses(
 
 	modPath := filepath.Join(cat.Root, string(modName))
 	if fi, err := os.Stat(modPath); err != nil || !fi.IsDir() {
-		return nil, fmt.Errorf("module not found: %q is not a dir.", modName)
+		return nil, errcat.Errorf(hitch.ErrNoSuchCatalog, "module not found: %q is not a dir", modName)
 	}
 	mirrorFilePath := filepath.Join(modPath, "mirrors.tl")
 	if fi, err := os.Stat(mirrorFilePath); err != nil || !(fi.Mode()&os.ModeType == 0) {
@@ -68,10 +78,19 @@ func (cat FSCatalog) ViewWarehouses(
 	}
 	f, err := os.Open(mirrorFilePath)
 	if err != nil {
-		return
+		return nil, errcat.ErrorDetailed(hitch.ErrCorruptState, fmt.Sprintf("module mirrors list for %q cannot be opened: %s", api.ItemRef{modName, "", ""}.String(), err),
+			map[string]string{
+				"ref": api.ItemRef{modName, "", ""}.String(),
+			})
 	}
 	defer f.Close()
 	err = refmt.NewUnmarshallerAtlased(json.DecodeOptions{}, f, api.Atlas_WareSourcing).Unmarshal(&ws)
+	if err != nil {
+		return nil, errcat.ErrorDetailed(hitch.ErrCorruptState, fmt.Sprintf("module mirrors list for %q cannot be opened: %s", api.ItemRef{modName, "", ""}.String(), err),
+			map[string]string{
+				"ref": api.ItemRef{modName, "", ""}.String(),
+			})
+	}
 	return
 
 }
