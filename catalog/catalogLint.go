@@ -36,10 +36,54 @@ func (cfg Linter) Lint() error {
 				}
 
 				// Check semantic sanity.
-				// TODO
-				_ = ws
-				// FUTURE doing full sanity checks of the data itself rather than just the format
-				//  will involve opening the catalog.tl file to check values against.
+				//  Uses a foolish probably-duplicate load of catalog.
+				cat, err := cfg.Tree.LoadModuleCatalog(moduleName)
+				if err != nil {
+					return nil // skip the rest of this check and wait for that error to be rediscovered later.
+				}
+				// Check that all info refers to our own module, and none is dangling nor overreaching.
+				if len(ws.ByPackType) > 0 {
+					cfg.WarnBehavior(
+						fmt.Sprintf("in mirror list for %q, 'ByPackType' should not be used; use 'ByModule' instead", moduleName),
+						func() {
+							for pktype, whs := range ws.ByPackType {
+								ws.AppendByModule(moduleName, pktype, whs...)
+							}
+							ws.ByPackType = nil
+						},
+					)
+				}
+				for modName, rest := range ws.ByModule {
+					if modName != moduleName {
+						cfg.WarnBehavior(
+							fmt.Sprintf("in mirror list for %q, 'ByModule' refers to another module, which is silly", moduleName),
+							func() {
+								for pktype, whs := range rest {
+									ws.AppendByModule(moduleName, pktype, whs...)
+								}
+								delete(ws.ByModule, modName)
+							},
+						)
+					}
+				}
+				allCatalogWares := map[api.WareID]struct{}{}
+				for _, rel := range cat.Releases {
+					for _, wareID := range rel.Items {
+						allCatalogWares[wareID] = struct{}{}
+					}
+				}
+				for wareID, _ := range ws.ByWare {
+					if _, present := allCatalogWares[wareID]; !present {
+						cfg.WarnBehavior(
+							fmt.Sprintf("in mirror list for %q, 'ByWare' refers to a ware %q which is not actually in the catalog", moduleName, wareID),
+							func() {
+								delete(ws.ByWare, wareID)
+							},
+						)
+					}
+				}
+				// FUTURE we don't yet lint for wares in a catalog but have no suggestions of any warehouses.
+				//  We could (although also it would be sort of a partial defense, because we're not going to check actual availability from here).
 
 				// Rewrite, ensuring bytewise normality.
 				// TODO
