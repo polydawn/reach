@@ -27,7 +27,7 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 		Commands: []cli.Command{
 			{
 				Name:  "emerge",
-				Usage: "todo docs",
+				Usage: "evaluate a pipeline, logging intermediate results and reporting final exports",
 				Action: func(ctx *cli.Context) error {
 					cwd, err := os.Getwd()
 					if err != nil {
@@ -91,6 +91,29 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 						panic("TODO")
 					}
 					return nil
+				},
+			},
+			{
+				Name:  "catalog",
+				Usage: "catalog subcommands help maintain the release catalog info tree",
+				Subcommands: []cli.Command{
+					{
+						Name:  "lint",
+						Usage: "verify the entire catalog tree is in canonical form (rewrites all files)",
+						Action: func(ctx *cli.Context) error {
+							cwd, err := os.Getwd()
+							if err != nil {
+								return err
+							}
+							ti, err := layout.FindTree(cwd)
+							if err != nil {
+								return err
+							}
+							// TODO more
+							_ = ti
+							return nil
+						},
+					},
 				},
 			},
 		},

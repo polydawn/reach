@@ -20,7 +20,8 @@ func TestNoargsHelptext(t *testing.T) {
 		   Stellar builds modules of repeatr operations, stages releases of the results, and can commission builds of entire generations of atomic releases from many modules.
 
 		COMMANDS:
-		     emerge   todo docs
+		     emerge   evaluate a pipeline, logging intermediate results and reporting final exports
+		     catalog  catalog subcommands help maintain the release catalog info tree
 		     help, h  Shows a list of commands or help for one command
 
 		GLOBAL OPTIONS:
