@@ -15,6 +15,7 @@ import (
 	"go.polydawn.net/go-timeless-api"
 	"go.polydawn.net/go-timeless-api/funcs"
 	"go.polydawn.net/go-timeless-api/hitch"
+	"go.polydawn.net/stellar/hitch/catalog"
 )
 
 // FUTURE: a stateful delegating wrapper that injects "candidate" build data.
@@ -34,32 +35,7 @@ func (cat FSCatalog) ViewCatalog(
 	ctx context.Context,
 	modName api.ModuleName,
 ) (modCat *api.ModuleCatalog, err error) {
-	funcs.MustValidate(modName)
-
-	modPath := filepath.Join(cat.Root, string(modName))
-	if fi, err := os.Stat(modPath); err != nil || !fi.IsDir() {
-		return nil, errcat.Errorf(hitch.ErrNoSuchCatalog, "module not found: %q is not a dir", modName)
-	}
-	modCatPath := filepath.Join(modPath, "catalog.tl")
-	if fi, err := os.Stat(modCatPath); err != nil || !(fi.Mode()&os.ModeType == 0) {
-		return nil, errcat.Errorf(hitch.ErrNoSuchCatalog, "module catalog not found: no %s file under %q.", "catalog.tl", modName)
-	}
-	f, err := os.Open(modCatPath)
-	if err != nil {
-		return nil, errcat.ErrorDetailed(hitch.ErrCorruptState, fmt.Sprintf("module catalog for %q cannot be opened: %s", api.ItemRef{modName, "", ""}.String(), err),
-			map[string]string{
-				"ref": api.ItemRef{modName, "", ""}.String(),
-			})
-	}
-	defer f.Close()
-	err = refmt.NewUnmarshallerAtlased(json.DecodeOptions{}, f, api.Atlas_Catalog).Unmarshal(&modCat)
-	if err != nil {
-		return nil, errcat.ErrorDetailed(hitch.ErrCorruptState, fmt.Sprintf("module catalog for %q cannot be opened: %s", api.ItemRef{modName, "", ""}.String(), err),
-			map[string]string{
-				"ref": api.ItemRef{modName, "", ""}.String(),
-			})
-	}
-	return
+	return catalog.Tree{cat.Root}.LoadModuleCatalog(modName)
 }
 
 func (cat FSCatalog) ViewWarehouses(
