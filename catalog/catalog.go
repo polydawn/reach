@@ -24,11 +24,39 @@ func (tree Tree) LoadModuleCatalog(modName api.ModuleName) (modCat *api.ModuleCa
 	return
 }
 
+// SaveModuleMirrors writes out a catalog.tl file.
+// The dirs will be created if necessary.
+func (tree Tree) SaveModuleCatalog(modName api.ModuleName, modCat api.ModuleCatalog) error {
+	if err := modName.Validate(); err != nil {
+		return errcat.ErrorDetailed(
+			hitch.ErrUsage,
+			fmt.Sprintf("module %q: not a valid module name: %s", modName, err),
+			map[string]string{
+				"ref": string(modName),
+			})
+	}
+	if err := os.MkdirAll(filepath.Join(tree.Root, string(modName)), 0644); err != nil {
+		return errcat.ErrorDetailed(
+			hitch.ErrCorruptState,
+			fmt.Sprintf("module %s could not be saved: %s", modName, err),
+			map[string]string{
+				"ref": string(modName),
+			})
+	}
+	return tree.saveModuleFile(modName, modCat, api.Atlas_Catalog, "catalog", "catalog.tl")
+}
+
 // LoadModuleMirrors attempts to load the mirrors.tl file for a module.
 // The result is nil and nil error iff the file does not exist.
 func (tree Tree) LoadModuleMirrors(modName api.ModuleName) (ws *api.WareSourcing, err error) {
 	err = tree.loadModuleFile(modName, &ws, api.Atlas_WareSourcing, false, "mirrors list", "mirrors.tl")
 	return
+}
+
+// SaveModuleMirrors writes out a mirrors.tl file.
+// The catalog must be written first (e.g. the dir must exist).
+func (tree Tree) SaveModuleMirrors(modName api.ModuleName, ws api.WareSourcing) error {
+	return tree.saveModuleFile(modName, ws, api.Atlas_WareSourcing, "mirrors list", "mirrors.tl")
 }
 
 //
@@ -107,6 +135,35 @@ func (tree Tree) expectModule(modName api.ModuleName) error {
 		return errcat.ErrorDetailed(
 			hitch.ErrNoSuchCatalog,
 			fmt.Sprintf("module %q not found: %q is not a dir", modName, modName),
+			map[string]string{
+				"ref": string(modName),
+			})
+	}
+	return nil
+}
+
+// saveModuleFile does expectModule, then serializes and writes to the file.
+// This method currently presumes json format in the files.
+func (tree Tree) saveModuleFile(modName api.ModuleName, structure interface{}, atl atlas.Atlas, purpose, filename string) error {
+	err := tree.expectModule(modName)
+	if err != nil {
+		return err
+	}
+	f, err := os.OpenFile(filepath.Join(tree.Root, string(modName), filename), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0644)
+	if err != nil {
+		return errcat.ErrorDetailed(
+			hitch.ErrCorruptState,
+			fmt.Sprintf("module %s failed to save for %q: %s", purpose, modName, err),
+			map[string]string{
+				"ref": string(modName),
+			})
+	}
+	defer f.Close()
+	err = refmt.NewMarshallerAtlased(json.EncodeOptions{Line: []byte{'\n'}, Indent: []byte{'\t'}}, f, atl).Marshal(structure)
+	if err != nil {
+		return errcat.ErrorDetailed(
+			hitch.ErrCorruptState, // This is actually kind of catastrophic and hopefully isn't reachable.
+			fmt.Sprintf("module %s failed to save for %q: %s", purpose, modName, err),
 			map[string]string{
 				"ref": string(modName),
 			})
