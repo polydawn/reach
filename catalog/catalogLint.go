@@ -15,17 +15,29 @@ type Linter struct {
 
 func (cfg Linter) Lint() error {
 	err := filepath.Walk(cfg.Tree.Root, func(path string, info os.FileInfo, err error) error {
-		modulePath := path[len(cfg.Tree.Root):]
+		if path == cfg.Tree.Root { // skip root dir
+			return nil
+		}
+		modulePath := path[len(cfg.Tree.Root)+1:]
+		if modulePath[0] == '.' { // ignore dotfiles at the root (.git is not unlikely here)
+			return filepath.SkipDir
+		}
 		switch info.Mode() & ^os.ModePerm {
 		case 0: // file
 			basename := filepath.Base(path)
+			moduleName := api.ModuleName(modulePath[:len(modulePath)-len(basename)-1])
 			switch basename {
 			case "mirrors.tl":
 				// Check parse.
-				// TODO
+				ws, err := cfg.Tree.LoadModuleMirrors(moduleName)
+				if err != nil {
+					cfg.WarnBehavior(fmt.Sprintf("%v", err), func() {})
+					return nil
+				}
 
 				// Check semantic sanity.
 				// TODO
+				_ = ws
 				// FUTURE doing full sanity checks of the data itself rather than just the format
 				//  will involve opening the catalog.tl file to check values against.
 
@@ -33,10 +45,15 @@ func (cfg Linter) Lint() error {
 				// TODO
 			case "catalog.tl":
 				// Check parse.
-				// TODO
+				cat, err := cfg.Tree.LoadModuleCatalog(moduleName)
+				if err != nil {
+					cfg.WarnBehavior(fmt.Sprintf("%v", err), func() {})
+					return nil
+				}
 
 				// Check semantic sanity.
 				// TODO
+				_ = cat
 
 				// Rewrite, ensuring bytewise normality.
 				// TODO
@@ -48,7 +65,7 @@ func (cfg Linter) Lint() error {
 		case os.ModeDir:
 			moduleName := api.ModuleName(modulePath)
 			if err := moduleName.Validate(); err != nil {
-				cfg.WarnBehavior(fmt.Sprintf("dir is not a valid moduleName: %v", err), remove(path))
+				cfg.WarnBehavior(fmt.Sprintf("dir %q is not a valid moduleName: %v", moduleName, err), remove(path))
 				return filepath.SkipDir
 			}
 			// FUTURE empty dirs should get a warning
