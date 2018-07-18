@@ -15,7 +15,7 @@ import (
 	"go.polydawn.net/go-timeless-api"
 	"go.polydawn.net/go-timeless-api/funcs"
 	"go.polydawn.net/go-timeless-api/hitch"
-	"go.polydawn.net/stellar/hitch/catalog"
+	"go.polydawn.net/stellar/catalog"
 )
 
 // FUTURE: a stateful delegating wrapper that injects "candidate" build data.

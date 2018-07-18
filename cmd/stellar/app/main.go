@@ -12,7 +12,7 @@ import (
 	"go.polydawn.net/go-timeless-api"
 	"go.polydawn.net/go-timeless-api/funcs"
 	"go.polydawn.net/go-timeless-api/repeatr/client/exec"
-	"go.polydawn.net/stellar/hitch"
+	"go.polydawn.net/stellar/catalog/hitch"
 	"go.polydawn.net/stellar/ingest"
 	"go.polydawn.net/stellar/layout"
 	"go.polydawn.net/stellar/module"
