@@ -9,7 +9,7 @@ import (
 )
 
 func Test(t *testing.T) {
-	exitCode, stdout, stderr := RunIntoBuffer("stellar", "emerge")
+	exitCode, stdout, stderr := RunIntoBuffer("stellar", "--print=ansi=major", "emerge")
 	Wish(t, exitCode, ShouldEqual, 0)
 	Wish(t, stdout, ShouldEqual, "")
 	Wish(t, stderr, ShouldEqual, Dedent(`

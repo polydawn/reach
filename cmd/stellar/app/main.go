@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"sort"
 
 	"github.com/urfave/cli"
 
 	"go.polydawn.net/go-timeless-api"
 	"go.polydawn.net/go-timeless-api/funcs"
 	"go.polydawn.net/go-timeless-api/repeatr/client/exec"
+	"go.polydawn.net/stellar/fmt"
 	"go.polydawn.net/stellar/hitch"
 	"go.polydawn.net/stellar/ingest"
 	"go.polydawn.net/stellar/layout"
@@ -24,11 +24,24 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 		Usage:     "sidereal repeatr",
 		UsageText: "Stellar builds modules of repeatr operations, stages releases of the results, and can commission builds of entire generations of atomic releases from many modules.",
 		Writer:    stderr,
+		Flags: []cli.Flag{
+			cli.StringFlag{
+				Name:  "print",
+				Usage: "Define the format of logs to print.",
+				// MoreUsage: "Define the format of logs to print.  The default is ansi and quite verbose."+
+				//   "Other formats, e.g. \"json\" can be specified, "+
+				//   "and certain parts of printing enabled or disabled by e.g. \"ansi-repeatrLogs\" "+
+				//   "to remove operation setup and teardown logs, or \"ansi+repeatrOutput\" to print "+
+				//   "the complete output of contained jobs.",
+			},
+		},
 		Commands: []cli.Command{
 			{
 				Name:  "emerge",
 				Usage: "todo docs",
 				Action: func(ctx *cli.Context) error {
+					p := parsePrintFlag(ctx.String("print"), stdout, stderr)
+
 					cwd, err := os.Getwd()
 					if err != nil {
 						return err
@@ -43,16 +56,16 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 						if err != nil {
 							return err
 						}
-						fmt.Fprintf(stderr, "workspace loaded\n")
+						p.PrintLog("workspace loaded\n")
 						ord, err := funcs.ModuleOrderStepsDeep(*mod)
 						if err != nil {
 							return err
 						}
-						fmt.Fprintf(stderr, "module contains %d steps\n", len(ord))
-						fmt.Fprintf(stderr, "module evaluation plan order:\n")
-						for i, fullStepRef := range ord {
-							fmt.Fprintf(stderr, "  - %.2d: %s\n", i+1, fullStepRef)
-						}
+						p.PrintLog(fmt.Sprintf("module contains %d steps\n", len(ord)))
+						p.PrintLog(stellarfmt.Tmpl("module evaluation plan order:\n"+
+							`{{range $k, $v := . -}}`+
+							`{{printf "  - %.2d: %s\n" (inc $k) $v}}`+
+							`{{end}}`, ord))
 						wareSourcing := api.WareSourcing{}
 						wareSourcing.AppendByPackType("tar", "ca+file://.timeless/warehouse/")
 						catalogHandle := hitch.FSCatalog{ti.CatalogRoot}
@@ -61,15 +74,10 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 							return err
 						}
 						wareSourcing.Append(*pinWs)
-						fmt.Fprintf(stderr, "imports pinned to hashes:\n")
-						allSlotRefs := []api.SubmoduleSlotRef{}
-						for k, _ := range pins {
-							allSlotRefs = append(allSlotRefs, k)
-						}
-						sort.Sort(api.SubmoduleSlotRefList(allSlotRefs))
-						for _, k := range allSlotRefs {
-							fmt.Fprintf(stderr, "  - %q: %s\n", k, pins[k])
-						}
+						p.PrintLog(stellarfmt.Tmpl("imports pinned to hashes:\n"+
+							`{{range $k, $v := . -}}`+
+							`{{printf "  - %q: %s\n" $k $v}}`+
+							`{{end}}`, pins))
 						// step step step!
 						exports, err := module.Evaluate(
 							context.Background(),
@@ -82,11 +90,11 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 						if err != nil {
 							return fmt.Errorf("evaluating module: %s", err)
 						}
-						fmt.Fprintf(stderr, "module eval complete.\n")
-						fmt.Fprintf(stderr, "module exports:\n")
-						for k, v := range exports {
-							fmt.Fprintf(stderr, "  - %q: %v\n", k, v)
-						}
+						p.PrintLog("module eval complete.\n")
+						p.PrintLog(stellarfmt.Tmpl("module exports:\n"+
+							`{{range $k, $v := . -}}`+
+							`{{printf "  - %q: %s\n" $k $v}}`+
+							`{{end}}`, exports))
 					case false:
 						panic("TODO")
 					}
@@ -104,5 +112,10 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 		exitCode = 1
 		fmt.Fprintf(stderr, "stellar: %s", err)
 	}
+	return
+}
+
+func parsePrintFlag(flags string, stdout, stderr io.Writer) (v stellarfmt.Printer) {
+	v.PrintLog = stellarfmt.PrinterLogText{stderr}.PrintLog
 	return
 }
