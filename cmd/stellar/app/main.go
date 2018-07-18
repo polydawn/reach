@@ -101,6 +101,12 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 					{
 						Name:  "lint",
 						Usage: "verify the entire catalog tree is in canonical form (rewrites all files)",
+						Flags: []cli.Flag{
+							cli.BoolFlag{
+								Name:  "rewrite",
+								Usage: "if set, all files will be rewritten to ensure bytewise canonicalization",
+							},
+						},
 						Action: func(ctx *cli.Context) error {
 							cwd, err := os.Getwd()
 							if err != nil {
@@ -117,6 +123,7 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 									warnings++
 									fmt.Fprintf(stderr, "WARN: %s\n", msg)
 								},
+								Rewrite: ctx.Bool("rewrite"),
 							}.Lint()
 							fmt.Fprintf(stderr, "%d total warnings\n", warnings)
 							if warnings > 0 {

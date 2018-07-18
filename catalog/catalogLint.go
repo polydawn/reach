@@ -11,6 +11,7 @@ import (
 type Linter struct {
 	Tree         Tree
 	WarnBehavior func(msg string, remedy func())
+	Rewrite      bool
 }
 
 func (cfg Linter) Lint() error {
@@ -32,6 +33,9 @@ func (cfg Linter) Lint() error {
 				ws, err := cfg.Tree.LoadModuleMirrors(moduleName)
 				if err != nil {
 					cfg.WarnBehavior(fmt.Sprintf("%v", err), func() {})
+					return nil
+				}
+				if ws == nil {
 					return nil
 				}
 
@@ -86,7 +90,9 @@ func (cfg Linter) Lint() error {
 				//  We could (although also it would be sort of a partial defense, because we're not going to check actual availability from here).
 
 				// Rewrite, ensuring bytewise normality.
-				// TODO
+				if cfg.Rewrite {
+					cfg.Tree.SaveModuleMirrors(moduleName, *ws)
+				}
 			case "catalog.tl":
 				// Check parse.
 				cat, err := cfg.Tree.LoadModuleCatalog(moduleName)
@@ -121,7 +127,9 @@ func (cfg Linter) Lint() error {
 				}
 
 				// Rewrite, ensuring bytewise normality.
-				// TODO
+				if cfg.Rewrite {
+					cfg.Tree.SaveModuleCatalog(moduleName, *cat)
+				}
 			default:
 				// TODO warn about any files of names we don't know about
 				// FUTURE need cases for matching the replay prefix
