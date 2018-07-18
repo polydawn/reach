@@ -96,8 +96,29 @@ func (cfg Linter) Lint() error {
 				}
 
 				// Check semantic sanity.
-				// TODO
-				_ = cat
+				// Check that the file's concept of who it is matches the path.
+				if cat.Name != moduleName {
+					cfg.WarnBehavior(
+						fmt.Sprintf("in catalog for %q, moduleName does not match path!", moduleName),
+						func() {
+							cat.Name = moduleName
+						},
+					)
+				}
+				// Check that all release names are valid, and no duplicate entries.
+				takenNames := map[api.ReleaseName]struct{}{}
+				for _, rel := range cat.Releases {
+					// TODO validation rule for release names missing
+					if _, present := takenNames[rel.Name]; present {
+						cfg.WarnBehavior(
+							fmt.Sprintf("in catalog for %q, multiple releases found named %q!", moduleName, rel.Name),
+							func() {
+								cat.Name = moduleName
+							},
+						)
+					}
+					takenNames[rel.Name] = struct{}{}
+				}
 
 				// Rewrite, ensuring bytewise normality.
 				// TODO
