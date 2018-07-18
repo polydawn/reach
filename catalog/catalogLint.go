@@ -9,23 +9,37 @@ import (
 )
 
 type Linter struct {
-	Root         string
+	Tree         Tree
 	WarnBehavior func(msg string, remedy func())
 }
 
-func (cfg *Linter) Lint() {
-	err := filepath.Walk(cfg.Root, func(path string, info os.FileInfo, err error) error {
-		modulePath := path[len(cfg.Root):]
+func (cfg Linter) Lint() error {
+	err := filepath.Walk(cfg.Tree.Root, func(path string, info os.FileInfo, err error) error {
+		modulePath := path[len(cfg.Tree.Root):]
 		switch info.Mode() & ^os.ModePerm {
 		case 0: // file
 			basename := filepath.Base(path)
 			switch basename {
 			case "mirrors.tl":
-				// TODO read, sanity check, rewrite
+				// Check parse.
+				// TODO
+
+				// Check semantic sanity.
+				// TODO
 				// FUTURE doing full sanity checks of the data itself rather than just the format
 				//  will involve opening the catalog.tl file to check values against.
+
+				// Rewrite, ensuring bytewise normality.
+				// TODO
 			case "catalog.tl":
-				// TODO read, sanity check, rewrite
+				// Check parse.
+				// TODO
+
+				// Check semantic sanity.
+				// TODO
+
+				// Rewrite, ensuring bytewise normality.
+				// TODO
 			default:
 				// TODO warn about any files of names we don't know about
 				// FUTURE need cases for matching the replay prefix
@@ -44,7 +58,8 @@ func (cfg *Linter) Lint() {
 			return nil
 		}
 	})
-	_ = err
+	// TODO some categorization of any walk errors.
+	return err
 }
 
 // remove is a factory that binds the eponymous often-suggested remedy for

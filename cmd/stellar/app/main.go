@@ -12,6 +12,7 @@ import (
 	"go.polydawn.net/go-timeless-api"
 	"go.polydawn.net/go-timeless-api/funcs"
 	"go.polydawn.net/go-timeless-api/repeatr/client/exec"
+	"go.polydawn.net/stellar/catalog"
 	"go.polydawn.net/stellar/catalog/hitch"
 	"go.polydawn.net/stellar/ingest"
 	"go.polydawn.net/stellar/layout"
@@ -109,9 +110,19 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 							if err != nil {
 								return err
 							}
-							// TODO more
-							_ = ti
-							return nil
+							warnings := 0
+							err = catalog.Linter{
+								Tree: catalog.Tree{ti.CatalogRoot},
+								WarnBehavior: func(msg string, _ func()) {
+									warnings++
+									fmt.Fprintf(stderr, "WARN: %s\n", msg)
+								},
+							}.Lint()
+							fmt.Fprintf(stderr, "%d total warnings\n", warnings)
+							if warnings > 0 {
+								exitCode = 4 // TODO standardize
+							}
+							return err
 						},
 					},
 				},
