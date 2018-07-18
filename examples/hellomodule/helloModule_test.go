@@ -24,3 +24,12 @@ func Test(t *testing.T) {
 		  - "wowslot": tar:89LoLzgAYkndYpNQC7H94eR6tU6F4EWy2yFGouDCQz1cx9JpYmEPyDm2YWwYTGDvPv
 	`))
 }
+
+func TestLint(t *testing.T) {
+	exitCode, stdout, stderr := RunIntoBuffer("stellar", "catalog", "lint")
+	Wish(t, exitCode, ShouldEqual, 0)
+	Wish(t, stdout, ShouldEqual, "")
+	Wish(t, stderr, ShouldEqual, Dedent(`
+		0 total warnings
+	`))
+}

@@ -12,7 +12,8 @@ import (
 	"go.polydawn.net/go-timeless-api"
 	"go.polydawn.net/go-timeless-api/funcs"
 	"go.polydawn.net/go-timeless-api/repeatr/client/exec"
-	"go.polydawn.net/stellar/hitch"
+	"go.polydawn.net/stellar/catalog"
+	"go.polydawn.net/stellar/catalog/hitch"
 	"go.polydawn.net/stellar/ingest"
 	"go.polydawn.net/stellar/layout"
 	"go.polydawn.net/stellar/module"
@@ -100,6 +101,12 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 					{
 						Name:  "lint",
 						Usage: "verify the entire catalog tree is in canonical form (rewrites all files)",
+						Flags: []cli.Flag{
+							cli.BoolFlag{
+								Name:  "rewrite",
+								Usage: "if set, all files will be rewritten to ensure bytewise canonicalization",
+							},
+						},
 						Action: func(ctx *cli.Context) error {
 							cwd, err := os.Getwd()
 							if err != nil {
@@ -109,9 +116,20 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 							if err != nil {
 								return err
 							}
-							// TODO more
-							_ = ti
-							return nil
+							warnings := 0
+							err = catalog.Linter{
+								Tree: catalog.Tree{ti.CatalogRoot},
+								WarnBehavior: func(msg string, _ func()) {
+									warnings++
+									fmt.Fprintf(stderr, "WARN: %s\n", msg)
+								},
+								Rewrite: ctx.Bool("rewrite"),
+							}.Lint()
+							fmt.Fprintf(stderr, "%d total warnings\n", warnings)
+							if warnings > 0 {
+								exitCode = 4 // TODO standardize
+							}
+							return err
 						},
 					},
 				},
