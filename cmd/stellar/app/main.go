@@ -143,7 +143,7 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 	}
 	if err := app.Run(args); err != nil {
 		exitCode = 1
-		fmt.Fprintf(stderr, "stellar: %s", err)
+		fmt.Fprintf(stderr, "stellar: %s\n", err)
 	}
 	return
 }
