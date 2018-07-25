@@ -34,17 +34,19 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 					if err != nil {
 						return err
 					}
-					ti, err := layout.FindTree(cwd)
+					landmarks, err := layout.FindLandmarks(cwd)
 					if err != nil {
 						return err
 					}
-					switch ti.Singleton {
-					case true:
-						mod, err := module.LoadByPath(*ti, "module.tl")
-						if err != nil {
-							return err
-						}
-						fmt.Fprintf(stderr, "workspace loaded\n")
+					if landmarks.ModuleRoot == "" {
+						return fmt.Errorf("no module found -- run this command in a module dir (e.g contains module.tl file), or specify a path to one")
+					}
+					mod, err := module.Load(*landmarks)
+					if err != nil {
+						return fmt.Errorf("error loading module: %s", err)
+					}
+					{
+						fmt.Fprintf(stderr, "module loaded\n")
 						ord, err := funcs.ModuleOrderStepsDeep(*mod)
 						if err != nil {
 							return err
@@ -56,7 +58,7 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 						}
 						wareSourcing := api.WareSourcing{}
 						wareSourcing.AppendByPackType("tar", "ca+file://.timeless/warehouse/")
-						catalogHandle := hitch.FSCatalog{ti.CatalogRoot}
+						catalogHandle := hitch.FSCatalog{landmarks.ModuleCatalogRoot}
 						pins, pinWs, err := funcs.ResolvePins(*mod, catalogHandle.ViewCatalog, catalogHandle.ViewWarehouses, ingest.Resolve)
 						if err != nil {
 							return err
@@ -88,8 +90,6 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 						for k, v := range exports {
 							fmt.Fprintf(stderr, "  - %q: %v\n", k, v)
 						}
-					case false:
-						panic("TODO")
 					}
 					return nil
 				},
@@ -112,13 +112,16 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 							if err != nil {
 								return err
 							}
-							ti, err := layout.FindTree(cwd)
+							landmarks, err := layout.FindLandmarks(cwd)
 							if err != nil {
 								return err
 							}
+							if landmarks.ModuleCatalogRoot == "" {
+								return fmt.Errorf("no catalog found")
+							}
 							warnings := 0
 							err = catalog.Linter{
-								Tree: catalog.Tree{ti.CatalogRoot},
+								Tree: catalog.Tree{landmarks.ModuleCatalogRoot}, // TODO as the name implies, this isn't generalized enough.  shouldn't be just modulecatalogs that are supported.
 								WarnBehavior: func(msg string, _ func()) {
 									warnings++
 									fmt.Fprintf(stderr, "WARN: %s\n", msg)

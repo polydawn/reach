@@ -2,7 +2,6 @@ package module
 
 import (
 	"os"
-	"path/filepath"
 
 	"github.com/polydawn/refmt"
 	"github.com/polydawn/refmt/json"
@@ -11,8 +10,8 @@ import (
 	"go.polydawn.net/stellar/layout"
 )
 
-func LoadByPath(ti layout.TreeInfo, pth string) (mod *api.Module, err error) {
-	f, err := os.Open(filepath.Join(ti.Root, "module.tl"))
+func Load(landmarks layout.Landmarks) (mod *api.Module, err error) {
+	f, err := os.Open(landmarks.ModuleFile)
 	if err != nil {
 		return
 	}

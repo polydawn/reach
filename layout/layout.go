@@ -6,80 +6,117 @@ import (
 	"path/filepath"
 )
 
-type TreeInfo struct {
-	Root        string
-	Singleton   bool
-	CatalogRoot string
+// Landmarks holds all the major context-defining filesystem paths.
+// Either module, or workspace, or both, or neither may be defined.
+// (If it's neither, you're probably not getting much done, of course.)
+type Landmarks struct {
+	ModuleRoot          string // Path of module root (dir contains .timeless and (probably) module.tl), if any.
+	ModuleFile          string // Path of the module file (typically $moduleRoot/module.tl
+	ModuleCatalogRoot   string // Path to the module catalog root (typically $moduleRoot/.timeless/catalog/).
+	WorkspaceRoot       string // Path of the workspace root (dir contains .timeless and workspace.tl), if any.
+	PathInsideWorkspace string // Path we are 'at' inside the workspaceRoot.
 }
 
-func FindTree(startPath string) (*TreeInfo, error) {
-	// Look for root.
-	root, found, err := getDirContainingMarkerDir(startPath, ".timeless")
-	if err != nil {
-		return nil, err
-	}
-	if !found {
-		return nil, fmt.Errorf("no .timeless dir found")
-	}
-	root += "/.timeless"
-	// Figure out if it's a singleton module or a whole stellar neighborhood.
-	fi, err := os.Stat(filepath.Join(root, "module.tl"))
-	if err == nil {
-		if fi.Mode()&os.ModeType != 0 {
-			return nil, fmt.Errorf("%s has no known layout (if 'module.tl' exists, should be file)", root)
-		}
-		return &TreeInfo{
-			Root:        root,
-			Singleton:   true,
-			CatalogRoot: filepath.Join(root, "catalog"),
-		}, nil
-	}
-	if !os.IsNotExist(err) {
-		return nil, err
-	}
-	// FUTURE consider other layouts.
-	return nil, fmt.Errorf("%s has no known layout (expecting a 'module.tl' file)", root)
-}
-
-/*
-	Look for a workspace indicated by a directory with special name:
-	starting from `startPath`,
-	iterating up through parent directories,
-	looking for dirs containing another dir named `marker`,
-	and returning the first such dir found; or, any errors encountered,
-	or false if we reached the root or have no more startPath to check.
-*/
-func getDirContainingMarkerDir(startPath string, marker string) (dirFound string, found bool, err error) {
-	dir := filepath.Clean(startPath)
+// FindLandmarks walks up the given path and looks for landmark files and dirs.
+//
+// The path can be relative or absolute; results will be in the same format
+// (but always clean'd).  If the given path is relative, the search will not
+// recurse above it.
+//
+// If there is more than one module found, the closest (i.e. longest path) one
+// will be reported.
+// If a workspace is found before a module is, FindLandmarks terminates search
+// and returns that workspace path alone.
+// In the edge case that a workspace and a module are coresident, both will
+// be detected correctly.
+func FindLandmarks(startPath string) (*Landmarks, error) {
+	startClean := filepath.Clean(startPath)
+	// Walk up the path, noting any landmarks as we go,
+	//  terminating when we run out of path segments.
+	dir := startClean
+	marks := &Landmarks{}
 	for {
 		// `ls`.  Any errors: return.
 		f, err := os.Open(dir)
 		if err != nil {
-			return "", false, err
+			return marks, err
 		}
-		// Scan through all entries in the dir, looking for our fav.
+		// Scan through all entries in the dir, looking for our landmarks.
 		names, err := f.Readdirnames(-1)
 		f.Close()
 		if err != nil {
-			return "", false, err
+			return marks, err
 		}
+		dirHasDotTimeless := false
+		dirHasKnownRole := false
 		for _, name := range names {
-			if name != marker {
+			switch name {
+			case "module.tl", "workspace.tl", ".timeless":
+				// interesting!
+			default:
 				continue
 			}
 			pth := filepath.Join(dir, name)
 			fi, err := os.Stat(pth)
 			if err != nil {
-				return "", false, err
+				return marks, err
 			}
-			if !fi.IsDir() {
-				break
+			switch name {
+			case "module.tl":
+				if fi.Mode()&os.ModeType != 0 {
+					return marks, fmt.Errorf("'module.tl' should be a file (%q)", pth)
+				}
+				dirHasKnownRole = true
+				if marks.ModuleRoot == "" {
+					marks.ModuleRoot = dir
+					marks.ModuleFile = pth
+					marks.ModuleCatalogRoot = filepath.Join(dir, ".timeless/catalog")
+				}
+			case "workspace.tl":
+				if fi.Mode()&os.ModeType != 0 {
+					return marks, fmt.Errorf("'workspace.tl' should be a file (%q)", pth)
+				}
+				dirHasKnownRole = true
+				marks.WorkspaceRoot = dir
+				marks.PathInsideWorkspace = filepath.Clean(startPath[len(dir):])
+			case ".timeless":
+				if !fi.IsDir() {
+					return marks, fmt.Errorf("'.timeless' should be a dir (%q)", pth)
+				}
+				dirHasDotTimeless = true
+			default:
+				panic("unreachable")
 			}
-			return dir, true, nil
+		}
+		// If we found a '.timeless' dir, but no other purpose-landmarking file,
+		//  check for special cases in deeper paths... and if that doesn't yield,
+		//   then we're looking at a layout that seems to be speaking to us,
+		//    but we don't know why so we should probably halt and report.
+		if dirHasDotTimeless && !dirHasKnownRole {
+			pth := filepath.Join(dir, ".timeless/module.tl")
+			fi, err := os.Stat(pth)
+			if os.IsNotExist(err) {
+				return marks, fmt.Errorf("'.timeless' dir found but unaccompanied %q)", dir)
+			}
+			if err != nil {
+				return marks, err
+			}
+			if fi.Mode()&os.ModeType != 0 {
+				return marks, fmt.Errorf("'module.tl' should be a file (%q)", pth)
+			}
+			if marks.ModuleRoot == "" {
+				marks.ModuleRoot = dir
+				marks.ModuleFile = pth
+				marks.ModuleCatalogRoot = filepath.Join(dir, ".timeless/catalog")
+			}
+		}
+		// If we found a workspace, woot, let's go home.
+		if marks.WorkspaceRoot != "" {
+			return marks, nil
 		}
 		// If basename'ing got us "/" this time, and we still didn't find it, terminate.
 		if dir == "/" || dir == "." {
-			return "", false, nil
+			return marks, nil
 		}
 		// Step up one dir.
 		dir = filepath.Dir(dir)
