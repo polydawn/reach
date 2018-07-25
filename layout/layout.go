@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-
-	"go.polydawn.net/go-timeless-api"
 )
 
 type TreeInfo struct {
@@ -41,10 +39,6 @@ func FindTree(startPath string) (*TreeInfo, error) {
 	}
 	// FUTURE consider other layouts.
 	return nil, fmt.Errorf("%s has no known layout (expecting a 'module.tl' file)", root)
-}
-
-func LoadModule(ti TreeInfo, modName api.ModuleName) (*api.Module, error) {
-	panic("TODO")
 }
 
 /*
