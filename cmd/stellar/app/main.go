@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"sort"
 
 	"github.com/urfave/cli"
@@ -57,8 +58,11 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 							fmt.Fprintf(stderr, "  - %.2d: %s\n", i+1, fullStepRef)
 						}
 						wareSourcing := api.WareSourcing{}
-						wareSourcing.AppendByPackType("tar", "ca+file://.timeless/warehouse/")
-						catalogHandle := hitch.FSCatalog{landmarks.ModuleCatalogRoot}
+						wareSourcing.AppendByPackType("tar", "ca+file://.timeless/warehouse/") // FIXME needs to be defined by workspace
+						catalogHandle := hitch.FSCatalog{[]catalog.Tree{
+							{landmarks.ModuleCatalogRoot},
+							{filepath.Join(landmarks.WorkspaceRoot, ".timeless/catalogs/upstream")}, // TODO fix hardcoded "upstream" param
+						}}
 						pins, pinWs, err := funcs.ResolvePins(*mod, catalogHandle.ViewCatalog, catalogHandle.ViewWarehouses, ingest.Resolve)
 						if err != nil {
 							return err

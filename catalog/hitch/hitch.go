@@ -5,6 +5,8 @@ package hitch
 import (
 	"context"
 
+	"github.com/polydawn/go-errcat"
+
 	"go.polydawn.net/go-timeless-api"
 	"go.polydawn.net/go-timeless-api/hitch"
 	"go.polydawn.net/stellar/catalog"
@@ -20,23 +22,44 @@ var (
 )
 
 type FSCatalog struct {
-	Root string
+	Trees []catalog.Tree // Reads probe linearly down.
 }
 
 func (cat FSCatalog) ViewCatalog(
 	ctx context.Context,
 	modName api.ModuleName,
 ) (modCat *api.ModuleCatalog, err error) {
-	return catalog.Tree{cat.Root}.LoadModuleCatalog(modName)
+	for _, tree := range cat.Trees {
+		modCat, err = tree.LoadModuleCatalog(modName)
+		switch errcat.Category(err) {
+		case nil:
+			return modCat, nil
+		case hitch.ErrNoSuchCatalog:
+			continue
+		default:
+			return nil, err
+		}
+	}
+	return
 }
 
 func (cat FSCatalog) ViewWarehouses(
 	ctx context.Context,
 	modName api.ModuleName,
 ) (ws *api.WareSourcing, err error) {
-	ws, err = catalog.Tree{cat.Root}.LoadModuleMirrors(modName)
-	if ws == nil {
-		return &api.WareSourcing{}, nil
+	for _, tree := range cat.Trees {
+		ws, err = tree.LoadModuleMirrors(modName)
+		switch errcat.Category(err) {
+		case nil:
+			if ws == nil {
+				return &api.WareSourcing{}, nil
+			}
+			return ws, nil
+		case hitch.ErrNoSuchCatalog:
+			continue
+		default:
+			return nil, err
+		}
 	}
 	return
 }
