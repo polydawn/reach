@@ -23,9 +23,10 @@ func Evaluate(
 	order []api.SubmoduleStepRef,
 	pins map[api.SubmoduleSlotRef]api.WareID,
 	wareSourcing api.WareSourcing,
+	wareStaging api.WareStaging,
 	runTool repeatr.RunFunc,
 ) (_ map[api.ItemName]api.WareID, err error) {
-	return evaluate(ctx, "", mod, order, map[api.SlotRef]api.WareID{}, pins, wareSourcing, runTool)
+	return evaluate(ctx, "", mod, order, map[api.SlotRef]api.WareID{}, pins, wareSourcing, wareStaging, runTool)
 }
 
 func evaluate(
@@ -36,6 +37,7 @@ func evaluate(
 	parentScope map[api.SlotRef]api.WareID,
 	pins funcs.Pins,
 	wareSourcing api.WareSourcing,
+	wareStaging api.WareStaging,
 	runTool repeatr.RunFunc,
 ) (_ map[api.ItemName]api.WareID, err error) {
 	// Initialize map of locally scoped inputs.
@@ -86,6 +88,7 @@ func evaluate(
 				ctx,
 				boundOp,
 				wareSourcing.PivotToInputs(boundOp),
+				wareStaging,
 				repeatr.InputControl{}, // input control is always zero for build jobs.
 				mon,
 			)
@@ -109,6 +112,7 @@ func evaluate(
 				scope,
 				pins.DetachSubtree(submStepRef.StepName),
 				wareSourcing,
+				wareStaging,
 				runTool,
 			)
 			if err != nil {
