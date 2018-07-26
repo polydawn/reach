@@ -57,11 +57,9 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 						for i, fullStepRef := range ord {
 							fmt.Fprintf(stderr, "  - %.2d: %s\n", i+1, fullStepRef)
 						}
-						wareStaging := api.WareStaging{ // FIXME needs to be defined by workspace
-							ByPackType: map[api.PackType]api.WarehouseLocation{"tar": "ca+file://.timeless/warehouse/"},
-						}
+						wareStaging := api.WareStaging{ByPackType: map[api.PackType]api.WarehouseLocation{"tar": landmarks.StagingWarehouse}}
 						wareSourcing := api.WareSourcing{}
-						wareSourcing.AppendByPackType("tar", "ca+file://.timeless/warehouse/") // FIXME needs to be defined by workspace
+						wareSourcing.AppendByPackType("tar", landmarks.StagingWarehouse)
 						catalogHandle := hitch.FSCatalog{[]catalog.Tree{
 							{landmarks.ModuleCatalogRoot},
 							{filepath.Join(landmarks.WorkspaceRoot, ".timeless/catalogs/upstream")}, // TODO fix hardcoded "upstream" param

@@ -4,17 +4,20 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+
+	"go.polydawn.net/go-timeless-api"
 )
 
 // Landmarks holds all the major context-defining filesystem paths.
 // Either module, or workspace, or both, or neither may be defined.
 // (If it's neither, you're probably not getting much done, of course.)
 type Landmarks struct {
-	ModuleRoot          string // Path of module root (dir contains .timeless and (probably) module.tl), if any.
-	ModuleFile          string // Path of the module file (typically $moduleRoot/module.tl
-	ModuleCatalogRoot   string // Path to the module catalog root (typically $moduleRoot/.timeless/catalog/).
-	WorkspaceRoot       string // Path of the workspace root (dir contains .timeless and workspace.tl), if any.
-	PathInsideWorkspace string // Path we are 'at' inside the workspaceRoot.
+	ModuleRoot          string                // Path of module root (dir contains .timeless and (probably) module.tl), if any.
+	ModuleFile          string                // Path of the module file (typically $moduleRoot/module.tl
+	ModuleCatalogRoot   string                // Path to the module catalog root (typically $moduleRoot/.timeless/catalog/).
+	WorkspaceRoot       string                // Path of the workspace root (dir contains .timeless and workspace.tl), if any.
+	PathInsideWorkspace string                // Path we are 'at' inside the workspaceRoot.
+	StagingWarehouse    api.WarehouseLocation // Address for a local warehouse (ca+file) where we'll store intermediates.
 }
 
 // FindLandmarks walks up the given path and looks for landmark files and dirs.
@@ -31,10 +34,13 @@ type Landmarks struct {
 // be detected correctly.
 func FindLandmarks(startPath string) (*Landmarks, error) {
 	startClean := filepath.Clean(startPath)
+	// Set fallback defaults before starting.
+	marks := &Landmarks{
+		StagingWarehouse: "ca+file://./.timeless/warehouse/",
+	}
 	// Walk up the path, noting any landmarks as we go,
 	//  terminating when we run out of path segments.
 	dir := startClean
-	marks := &Landmarks{}
 	for {
 		// `ls`.  Any errors: return.
 		f, err := os.Open(dir)
@@ -79,6 +85,7 @@ func FindLandmarks(startPath string) (*Landmarks, error) {
 				dirHasKnownRole = true
 				marks.WorkspaceRoot = dir
 				marks.PathInsideWorkspace = filepath.Clean(startPath[len(dir):])
+				marks.StagingWarehouse = api.WarehouseLocation("ca+file://" + dir + "/.timeless/warehouse")
 			case ".timeless":
 				if !fi.IsDir() {
 					return marks, fmt.Errorf("'.timeless' should be a dir (%q)", pth)
