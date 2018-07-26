@@ -21,6 +21,7 @@ func TestNoargsHelptext(t *testing.T) {
 
 		COMMANDS:
 		     emerge   evaluate a pipeline, logging intermediate results and reporting final exports
+		     ci       given a module with one ingest using git, build it once, then build it again each time the git repo updates
 		     catalog  catalog subcommands help maintain the release catalog info tree
 		     help, h  Shows a list of commands or help for one command
 
