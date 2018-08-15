@@ -29,7 +29,7 @@
 					"boop": {
 						"operation": {
 							"inputs": {
-								"image": "/"
+								"image": "/",
 								"thingy": "/task/thingy"
 							},
 							"action": {
@@ -58,19 +58,19 @@
 								"out": "/task/out"
 							}
 						}
-					},
+					}
 				},
 				"exports": {
-					"frob": "boop.out"
+					"frob": "boop.out",
 					"snoz": "bap.out"
 				}
 			}
-		}
+		},
 		"step-after": {
 			"operation": {
 				"inputs": {
-					"base": "/"
-					"submodule-jamboree.frob": "/task/frob"
+					"base": "/",
+					"submodule-jamboree.frob": "/task/frob",
 					"submodule-jamboree.snoz": "/task/snoz"
 				},
 				"action": {
