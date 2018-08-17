@@ -26,12 +26,22 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 			{
 				Name:  "emerge",
 				Usage: "evaluate a pipeline, logging intermediate results and reporting final exports",
-				Action: func(ctx *cli.Context) error {
-					cwd, err := os.Getwd()
-					if err != nil {
-						return err
+				Action: func(args *cli.Context) error {
+					pth := ""
+					switch args.NArg() {
+					case 0:
+						cwd, err := os.Getwd()
+						if err != nil {
+							return err
+						}
+						pth = cwd
+					case 1:
+						pth = args.Args()[0]
+					default:
+						return fmt.Errorf("'stellar emerge' takes zero or one args")
 					}
-					landmarks, err := layout.FindLandmarks(cwd)
+
+					landmarks, err := layout.FindLandmarks(pth)
 					if err != nil {
 						return err
 					}
