@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	"go.polydawn.net/go-timeless-api"
-	"go.polydawn.net/stellar/ingest/git"
-	"go.polydawn.net/stellar/ingest/literal"
+	"go.polydawn.net/stellar/gadgets/ingest/git"
+	"go.polydawn.net/stellar/gadgets/ingest/literal"
 )
 
 func Resolve(ctx context.Context, ingestRef api.ImportRef_Ingest) (*api.WareID, *api.WareSourcing, error) {

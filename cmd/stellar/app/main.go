@@ -5,15 +5,15 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"time"
 
 	"github.com/urfave/cli"
 
-	"go.polydawn.net/go-timeless-api"
-	"go.polydawn.net/stellar/catalog"
-	"go.polydawn.net/stellar/ingest/git"
-	"go.polydawn.net/stellar/layout"
-	"go.polydawn.net/stellar/module"
+	"go.polydawn.net/stellar/app/catalog"
+	"go.polydawn.net/stellar/app/ci"
+	"go.polydawn.net/stellar/app/emerge"
+	"go.polydawn.net/stellar/gadgets/catalog"
+	"go.polydawn.net/stellar/gadgets/layout"
+	"go.polydawn.net/stellar/gadgets/module"
 )
 
 func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io.Writer) (exitCode int) {
@@ -52,7 +52,7 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 					if err != nil {
 						return fmt.Errorf("error loading module: %s", err)
 					}
-					return evalModule(*landmarks, *mod, stdout, stderr)
+					return emergeApp.EvalModule(*landmarks, *mod, stdout, stderr)
 				},
 			},
 			{
@@ -74,41 +74,7 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 					if err != nil {
 						return fmt.Errorf("error loading module: %s", err)
 					}
-					var hingeIngest api.ImportRef_Ingest
-					for _, imp := range mod.Imports {
-						switch imp2 := imp.(type) {
-						case api.ImportRef_Ingest:
-							switch imp2.IngestKind {
-							case "git":
-								if hingeIngest != (api.ImportRef_Ingest{}) {
-									return fmt.Errorf("a module for use in CI mode can only have one ingest!")
-								}
-								hingeIngest = imp2
-							default:
-								return fmt.Errorf("a module for use in CI mode can only have one ingest, and it must be 'ingest:git'")
-							}
-						}
-					}
-					if hingeIngest == (api.ImportRef_Ingest{}) {
-						return fmt.Errorf("a module for use in CI mode must have one ingest, and it must be 'ingest:git'")
-					}
-					previouslyIngested := api.WareID{}
-					for {
-						newlyIngested, _, err := gitingest.Resolve(context.Background(), hingeIngest)
-						if err != nil {
-							return err
-						}
-						if *newlyIngested == previouslyIngested {
-							time.Sleep(1260 * time.Millisecond)
-							continue
-						}
-						fmt.Fprintf(stderr, "found new git hash!  evaluating %s\n", newlyIngested)
-						if err := evalModule(*landmarks, *mod, stdout, stderr); err != nil {
-							return err
-						}
-						fmt.Fprintf(stderr, "CI execution done, successfully.  Going into standby until more changes.\n")
-						previouslyIngested = *newlyIngested
-					}
+					return ciApp.Loop(*landmarks, *mod, stdout, stderr)
 				},
 			},
 			{
@@ -137,7 +103,7 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 								return fmt.Errorf("no catalog found")
 							}
 							warnings := 0
-							err = catalog.Linter{
+							err = catalogApp.Linter{
 								Tree: catalog.Tree{landmarks.ModuleCatalogRoot}, // TODO as the name implies, this isn't generalized enough.  shouldn't be just modulecatalogs that are supported.
 								WarnBehavior: func(msg string, _ func()) {
 									warnings++

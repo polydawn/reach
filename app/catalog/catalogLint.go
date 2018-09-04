@@ -1,4 +1,4 @@
-package catalog
+package catalogApp
 
 import (
 	"fmt"
@@ -6,10 +6,11 @@ import (
 	"path/filepath"
 
 	"go.polydawn.net/go-timeless-api"
+	"go.polydawn.net/stellar/gadgets/catalog"
 )
 
 type Linter struct {
-	Tree         Tree
+	Tree         catalog.Tree
 	WarnBehavior func(msg string, remedy func())
 	Rewrite      bool
 }
