@@ -10,10 +10,11 @@ import (
 	"github.com/urfave/cli"
 
 	"go.polydawn.net/go-timeless-api"
-	"go.polydawn.net/stellar/catalog"
-	"go.polydawn.net/stellar/ingest/git"
-	"go.polydawn.net/stellar/layout"
-	"go.polydawn.net/stellar/module"
+	"go.polydawn.net/stellar/app/catalog"
+	"go.polydawn.net/stellar/gadgets/catalog"
+	"go.polydawn.net/stellar/gadgets/ingest/git"
+	"go.polydawn.net/stellar/gadgets/layout"
+	"go.polydawn.net/stellar/gadgets/module"
 )
 
 func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io.Writer) (exitCode int) {
@@ -137,7 +138,7 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 								return fmt.Errorf("no catalog found")
 							}
 							warnings := 0
-							err = catalog.Linter{
+							err = catalogApp.Linter{
 								Tree: catalog.Tree{landmarks.ModuleCatalogRoot}, // TODO as the name implies, this isn't generalized enough.  shouldn't be just modulecatalogs that are supported.
 								WarnBehavior: func(msg string, _ func()) {
 									warnings++

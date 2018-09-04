@@ -4,17 +4,18 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 	"path/filepath"
 	"sort"
 
 	"go.polydawn.net/go-timeless-api"
 	"go.polydawn.net/go-timeless-api/funcs"
 	"go.polydawn.net/go-timeless-api/repeatr/client/exec"
-	"go.polydawn.net/stellar/catalog"
-	"go.polydawn.net/stellar/catalog/hitch"
-	"go.polydawn.net/stellar/ingest"
-	"go.polydawn.net/stellar/layout"
-	"go.polydawn.net/stellar/module"
+	"go.polydawn.net/stellar/gadgets/catalog"
+	"go.polydawn.net/stellar/gadgets/catalog/hitch"
+	"go.polydawn.net/stellar/gadgets/ingest"
+	"go.polydawn.net/stellar/gadgets/layout"
+	"go.polydawn.net/stellar/gadgets/module"
 )
 
 func evalModule(landmarks layout.Landmarks, mod api.Module, stdout, stderr io.Writer) error {
@@ -50,6 +51,7 @@ func evalModule(landmarks layout.Landmarks, mod api.Module, stdout, stderr io.Wr
 		fmt.Fprintf(stderr, "  - %q: %s\n", k, pins[k])
 	}
 	// step step step!
+	os.Setenv("REPEATR_MEMODIR", filepath.Join(landmarks.WorkspaceRoot, ".timeless/memo"))
 	exports, err := module.Evaluate(
 		context.Background(),
 		mod,
