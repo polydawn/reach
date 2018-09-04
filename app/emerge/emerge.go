@@ -1,4 +1,4 @@
-package stellar
+package emergeApp
 
 import (
 	"context"
@@ -18,7 +18,7 @@ import (
 	"go.polydawn.net/stellar/gadgets/module"
 )
 
-func evalModule(landmarks layout.Landmarks, mod api.Module, stdout, stderr io.Writer) error {
+func EvalModule(landmarks layout.Landmarks, mod api.Module, stdout, stderr io.Writer) error {
 	fmt.Fprintf(stderr, "module loaded\n")
 	ord, err := funcs.ModuleOrderStepsDeep(mod)
 	if err != nil {

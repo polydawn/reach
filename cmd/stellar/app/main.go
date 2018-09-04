@@ -11,6 +11,7 @@ import (
 
 	"go.polydawn.net/go-timeless-api"
 	"go.polydawn.net/stellar/app/catalog"
+	"go.polydawn.net/stellar/app/emerge"
 	"go.polydawn.net/stellar/gadgets/catalog"
 	"go.polydawn.net/stellar/gadgets/ingest/git"
 	"go.polydawn.net/stellar/gadgets/layout"
@@ -53,7 +54,7 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 					if err != nil {
 						return fmt.Errorf("error loading module: %s", err)
 					}
-					return evalModule(*landmarks, *mod, stdout, stderr)
+					return emergeApp.EvalModule(*landmarks, *mod, stdout, stderr)
 				},
 			},
 			{
@@ -104,7 +105,7 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 							continue
 						}
 						fmt.Fprintf(stderr, "found new git hash!  evaluating %s\n", newlyIngested)
-						if err := evalModule(*landmarks, *mod, stdout, stderr); err != nil {
+						if err := emergeApp.EvalModule(*landmarks, *mod, stdout, stderr); err != nil {
 							return err
 						}
 						fmt.Fprintf(stderr, "CI execution done, successfully.  Going into standby until more changes.\n")
