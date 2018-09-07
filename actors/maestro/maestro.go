@@ -32,20 +32,121 @@
 package maestro
 
 import (
-	"context"
-
 	"github.com/warpfork/go-sup"
 
 	"go.polydawn.net/go-timeless-api"
 	"go.polydawn.net/go-timeless-api/funcs"
+	"go.polydawn.net/go-timeless-api/repeatr/client/exec"
+	"go.polydawn.net/stellar/gadgets/module"
 )
 
 type TaskSubmission struct {
-	Context context.Context
-	Promise sup.Promise
+	CancelChan <-chan struct{}
+	Promise    sup.Promise
 	//Monitor struct{???}
 
 	Module       api.Module
 	Pins         funcs.Pins
 	WareSourcing api.WareSourcing
+}
+
+func New(Inbox <-chan TaskSubmission, StagingWarehouse api.WarehouseLocation) sup.Supervisor {
+	return maestro{nil, Inbox, StagingWarehouse}.init()
+}
+
+type maestro struct {
+	sup.Supervisor // Maestro *is* a task itself, composed of internal subtasks. // it's recommended to make anything that embeds a supervisor like this into an unexported type, and return only non-concrete references to it; this prevents code external to the package from casting to a concrete type and being able to mutate this field (which would be insane).
+
+	// -- wiring --
+
+	Inbox <-chan TaskSubmission
+
+	// -- config --
+
+	StagingWarehouse api.WarehouseLocation
+}
+
+func (m maestro) init() *maestro {
+	millFeed := make(chan sup.Task)
+	m.Supervisor = sup.SuperviseForkJoin("maestro", []sup.Task{
+		&maestroControl{&m, millFeed},
+		sup.SuperviseStream("mill", millFeed),
+	})
+	return &m
+}
+
+type maestroControl struct {
+	*maestro
+	millFeed chan<- sup.Task
+}
+
+func (mc *maestroControl) Name() string { return "ctrl" }
+func (mc *maestroControl) Run(ctx sup.Context) error {
+	defer close(mc.millFeed) // so when you have a millfeedcontrol actor, this is common: you don't want to forget to close on your way out or your sibling task that's the mill supervisor will hang.
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case msg, ok := <-mc.Inbox:
+			if !ok {
+				return nil
+			}
+			mc.millFeed <- maestroTask{
+				msg,
+				api.WareStaging{ByPackType: map[api.PackType]api.WarehouseLocation{"tar": mc.StagingWarehouse}},
+			}
+
+			// alternatively:
+			//
+			//    fn := maestroTask{msg, ...}.Run
+			//    go mc.millSupervisor.NewTask("%").Bind(fn).Do()
+			//
+			// i'm disconcerted by channels here because if this had backpressure of any kind, we'd be in trouble doing this without a ctxdone-select.  whereas a mgr.newTask design could either panic (like write to close channel already would)
+			// and it's not just the ctxdone-select being syntactically annoying: if i had too many tasks to submit more, i want to return and groom my queue.  though to be fair, i guess i can do that with a nonblocking select, and that actually *is* something that's application-domain-specific maestro work.
+			//
+			// the *nice* thing about channels as a task submission design is that it immediately makes it clear to people that there must be a single responsible individual for closing it, and you cannot multiclose it, and nobody can argue about it.
+		}
+	}
+}
+
+type maestroTask struct {
+	TaskSubmission
+	wareStaging api.WareStaging
+}
+
+func (mt maestroTask) Run(ctx sup.Context) (_ error) {
+	// if it was already resolved, that quietly takes precident, so this is safe.
+	// however, this is also the kind of thing you'd want to be able to do if your task got rejected entirely.
+	defer mt.Promise.Cancel()
+	// Either the supervisor can cancel our work, or the original submitter of
+	//  the task might say it no long cares.  Either causes us to abort.
+	select {
+	case <-ctx.Done():
+		return
+	case <-mt.CancelChan:
+		return
+	default:
+	}
+	// FIXME closure of mt.CancelChan should also work *later*, so we need a composed ctx here and to park a goroutine on forwarding it :I
+
+	ord, err := funcs.ModuleOrderStepsDeep(mt.TaskSubmission.Module)
+	if err != nil {
+		mt.Promise.Resolve(err) // TODO should be a union type for this
+		return
+	}
+	exports, err := module.Evaluate(
+		ctx,
+		mt.TaskSubmission.Module,
+		ord,
+		mt.TaskSubmission.Pins,
+		mt.TaskSubmission.WareSourcing,
+		mt.wareStaging,
+		repeatrclient.Run,
+	)
+	if err != nil {
+		mt.Promise.Resolve(err) // TODO should be a union type for this
+		return
+	}
+	mt.Promise.Resolve(exports) // TODO should be a union type for this
+	return
 }
