@@ -36,7 +36,10 @@ func EvalModule(landmarks layout.Landmarks, mod api.Module, stdout, stderr io.Wr
 		{landmarks.ModuleCatalogRoot},
 		{filepath.Join(landmarks.WorkspaceRoot, ".timeless/catalogs/upstream")}, // TODO fix hardcoded "upstream" param
 	}}
-	pins, pinWs, err := funcs.ResolvePins(mod, catalogHandle.ViewCatalog, catalogHandle.ViewWarehouses, ingest.Resolve)
+	resolveTool := ingest.Config{
+		wareStaging, // FUTURE: should probably use different warehouse for this, so it's easier to GC the shortlived objects
+	}.Resolve
+	pins, pinWs, err := funcs.ResolvePins(mod, catalogHandle.ViewCatalog, catalogHandle.ViewWarehouses, resolveTool)
 	if err != nil {
 		return err
 	}
