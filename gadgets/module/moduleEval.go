@@ -70,24 +70,13 @@ func evaluate(
 		fmt.Printf("steppin %v: %v\n", ctxPth, submStepRef)
 		switch step := mod.Steps[submStepRef.StepName].(type) {
 		case api.Operation:
-			boundOp := api.BoundOperation{
-				InputPins: make(map[api.SlotRef]api.WareID),
-				Operation: step,
-			}
-			for slotRef := range step.Inputs {
-				pin, ok := scope[slotRef]
-				if !ok {
-					// This could be either because your order was not toposorted, or
-					//  because of out-of-scope references.  Message could improve.
-					panic(fmt.Errorf("operation %q tries to use %q but it is not in scope", submStepRef.Contextualize(ctxPth), slotRef))
-				}
-				boundOp.InputPins[slotRef] = pin
-			}
 			mon, monWaitCh := repeatrfmt.ServeMonitor(repeatrfmt.NewAnsiPrinter(os.Stdout, os.Stderr))
-			record, err := runTool(
+			record, err := repeatr.RunOperation(
 				ctx,
-				boundOp,
-				wareSourcing.PivotToInputs(boundOp),
+				runTool,
+				step,
+				scope,
+				wareSourcing,
 				wareStaging,
 				repeatr.InputControl{}, // input control is always zero for build jobs.
 				mon,
