@@ -33,7 +33,7 @@ func Resolve(ctx context.Context, ingestRef api.ImportRef_Ingest) (
 	//  We're perfectly happy to work with relative paths as ingest params,
 	//  but it's a mess of unpleasantness to log and debug if we carry them.
 	pth, err := filepath.Abs(pth)
-	if len(refArgsHunks) != 2 {
+	if err != nil {
 		return nil, nil, fmt.Errorf("catastrophe, cannot find cwd: %s", err)
 	}
 
