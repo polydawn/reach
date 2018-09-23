@@ -12,6 +12,7 @@ import (
 )
 
 type Config struct {
+	ModuleDir   string
 	StagingArea api.WareStaging
 }
 
@@ -35,10 +36,9 @@ func (cfg Config) Resolve(ctx context.Context, ingestRef api.ImportRef_Ingest) (
 	// Absolutize path asap.
 	//  We're perfectly happy to work with relative paths as ingest params,
 	//  but it's a mess of unpleasantness to log and debug if we carry them.
-	pth, err := filepath.Abs(pth)
-	if err != nil {
-		return nil, nil, fmt.Errorf("catastrophe, cannot find cwd: %s", err)
-	}
+	// Note that there's absolutely no attempt to limit the reach of the path
+	//  here to stay within the module dir.
+	pth = filepath.Clean(filepath.Join(cfg.ModuleDir, pth))
 
 	// Pick a single place where we're going to store output.
 	warehouse := cfg.StagingArea.ByPackType[packType]

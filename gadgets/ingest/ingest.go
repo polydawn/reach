@@ -11,15 +11,21 @@ import (
 )
 
 type Config struct {
+	ModuleDir   string
 	StagingArea api.WareStaging
 }
 
 func (cfg Config) Resolve(ctx context.Context, ingestRef api.ImportRef_Ingest) (*api.WareID, *api.WareSourcing, error) {
 	switch ingestRef.IngestKind {
 	case "git":
-		return gitingest.Resolve(ctx, ingestRef)
+		return gitingest.Config{
+			ModuleDir: cfg.ModuleDir,
+		}.Resolve(ctx, ingestRef)
 	case "pack":
-		return packingest.Config{cfg.StagingArea}.Resolve(ctx, ingestRef)
+		return packingest.Config{
+			ModuleDir:   cfg.ModuleDir,
+			StagingArea: cfg.StagingArea,
+		}.Resolve(ctx, ingestRef)
 	case "literal":
 		return literalingest.Resolve(ctx, ingestRef)
 	default:

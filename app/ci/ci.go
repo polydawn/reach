@@ -33,7 +33,8 @@ func Loop(landmarks layout.Landmarks, mod api.Module, stdout, stderr io.Writer) 
 	}
 	previouslyIngested := api.WareID{}
 	for {
-		newlyIngested, _, err := gitingest.Resolve(context.Background(), hingeIngest)
+		gitResolve := gitingest.Config{landmarks.ModuleRoot}.Resolve
+		newlyIngested, _, err := gitResolve(context.Background(), hingeIngest)
 		if err != nil {
 			return err
 		}
