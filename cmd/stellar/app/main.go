@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 
 	"github.com/urfave/cli"
 
@@ -90,26 +91,47 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 								Usage: "if set, all files will be rewritten to ensure bytewise canonicalization",
 							},
 						},
-						Action: func(ctx *cli.Context) error {
-							cwd, err := os.Getwd()
-							if err != nil {
-								return err
+						Action: func(args *cli.Context) error {
+							pth := ""
+							switch args.NArg() {
+							case 0:
+								cwd, err := os.Getwd()
+								if err != nil {
+									return err
+								}
+								landmarks, err := layout.FindLandmarks(cwd)
+								if err != nil {
+									return err
+								}
+								if landmarks.ModuleCatalogRoot == "" {
+									return fmt.Errorf("no catalog found")
+								}
+								pth = landmarks.ModuleCatalogRoot
+							case 1:
+								var err error
+								pth, err = filepath.Abs(args.Args()[0])
+								if err != nil {
+									panic(err)
+								}
+								fi, err := os.Stat(pth)
+								if err != nil {
+									return fmt.Errorf("'stellar catalog lint' should be aimed at a directory: %s", err)
+								}
+								if fi.Mode()&os.ModeType != os.ModeDir {
+									return fmt.Errorf("'stellar catalog lint' should be aimed at a directory")
+								}
+							default:
+								return fmt.Errorf("'stellar catalog lint' takes zero or one args")
 							}
-							landmarks, err := layout.FindLandmarks(cwd)
-							if err != nil {
-								return err
-							}
-							if landmarks.ModuleCatalogRoot == "" {
-								return fmt.Errorf("no catalog found")
-							}
+
 							warnings := 0
-							err = catalogApp.Linter{
-								Tree: catalog.Tree{landmarks.ModuleCatalogRoot}, // TODO as the name implies, this isn't generalized enough.  shouldn't be just modulecatalogs that are supported.
+							err := catalogApp.Linter{
+								Tree: catalog.Tree{pth},
 								WarnBehavior: func(msg string, _ func()) {
 									warnings++
 									fmt.Fprintf(stderr, "WARN: %s\n", msg)
 								},
-								Rewrite: ctx.Bool("rewrite"),
+								Rewrite: args.Bool("rewrite"),
 							}.Lint()
 							fmt.Fprintf(stderr, "%d total warnings\n", warnings)
 							if warnings > 0 {
