@@ -81,6 +81,7 @@ func evaluate(
 				repeatr.InputControl{}, // input control is always zero for build jobs.
 				mon,
 			)
+			close(mon.Chan)
 			<-monWaitCh
 			if err != nil {
 				return nil, fmt.Errorf("failed evaluating operation %q: %s", submStepRef.Contextualize(ctxPth), err)
