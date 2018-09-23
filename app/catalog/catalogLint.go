@@ -17,13 +17,26 @@ type Linter struct {
 
 func (cfg Linter) Lint() error {
 	err := filepath.Walk(cfg.Tree.Root, func(path string, info os.FileInfo, err error) error {
-		if path == cfg.Tree.Root { // skip root dir
+		// Root dir is a special case.  Check it's at least a dir, then skip.
+		if path == cfg.Tree.Root {
+			if err != nil {
+				return err
+			}
+			if info.Mode()&os.ModeType != os.ModeDir {
+				return fmt.Errorf("catalog lint: did not start at directory (%s)", path)
+			}
 			return nil
 		}
+		// Get the path sans the prefix of the root.
 		modulePath := path[len(cfg.Tree.Root)+1:]
-		if modulePath[0] == '.' { // ignore dotfiles at the root (.git is not unlikely here)
-			return filepath.SkipDir
+		// Ignore dotfiles at the root.  (.git is not unlikely here)
+		if modulePath[0] == '.' {
+			if info.IsDir() {
+				return filepath.SkipDir
+			}
+			return nil
 		}
+		// And now on with your regularly scheduled programming.
 		switch info.Mode() & ^os.ModePerm {
 		case 0: // file
 			basename := filepath.Base(path)

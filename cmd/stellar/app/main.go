@@ -113,13 +113,6 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 								if err != nil {
 									panic(err)
 								}
-								fi, err := os.Stat(pth)
-								if err != nil {
-									return fmt.Errorf("'stellar catalog lint' should be aimed at a directory: %s", err)
-								}
-								if fi.Mode()&os.ModeType != os.ModeDir {
-									return fmt.Errorf("'stellar catalog lint' should be aimed at a directory")
-								}
 							default:
 								return fmt.Errorf("'stellar catalog lint' takes zero or one args")
 							}
