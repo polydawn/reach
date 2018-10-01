@@ -8,6 +8,10 @@ import (
 	"path/filepath"
 	"sort"
 
+	"github.com/polydawn/refmt"
+	"github.com/polydawn/refmt/json"
+	"github.com/polydawn/refmt/obj/atlas"
+
 	"go.polydawn.net/go-timeless-api"
 	"go.polydawn.net/go-timeless-api/funcs"
 	"go.polydawn.net/go-timeless-api/repeatr/client/exec"
@@ -70,8 +74,12 @@ func EvalModule(landmarks layout.Landmarks, mod api.Module, stdout, stderr io.Wr
 	}
 	fmt.Fprintf(stderr, "module eval complete.\n")
 	fmt.Fprintf(stderr, "module exports:\n")
-	for k, v := range exports {
-		fmt.Fprintf(stderr, "  - %q: %v\n", k, v)
+	//	for k, v := range exports {
+	//		fmt.Fprintf(stderr, "  - %q: %v\n", k, v)
+	//	}
+	asdf := atlas.MustBuild(api.WareID_AtlasEntry)
+	if err := refmt.NewMarshallerAtlased(json.EncodeOptions{Line: []byte("\n"), Indent: []byte("\t")}, os.Stdout, asdf).Marshal(exports); err != nil {
+		panic(err)
 	}
 	return nil
 }

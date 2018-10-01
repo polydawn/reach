@@ -67,10 +67,10 @@ func evaluate(
 		if submStepRef.SubmoduleRef != "" {
 			continue // belongs to a deeper level, handled by recursion already
 		}
-		fmt.Printf("steppin %v: %v\n", ctxPth, submStepRef)
+		fmt.Fprintf(os.Stderr, "beginning evaluation of step %v: %v\n", ctxPth, submStepRef)
 		switch step := mod.Steps[submStepRef.StepName].(type) {
 		case api.Operation:
-			mon, monWaitCh := repeatrfmt.ServeMonitor(repeatrfmt.NewAnsiPrinter(os.Stdout, os.Stderr))
+			mon, monWaitCh := repeatrfmt.ServeMonitor(repeatrfmt.NewAnsiPrinter(os.Stderr, os.Stderr))
 			record, err := repeatr.RunOperation(
 				ctx,
 				runTool,
