@@ -20,6 +20,7 @@ func TestEmergeOutsideModule(t *testing.T) {
 
 func TestEmergeInModule(t *testing.T) {
 	os.Chdir("projBar")
+	defer os.Chdir("..")
 	exitCode, stdout, stderr := RunIntoBuffer("stellar", "emerge")
 	Wish(t, exitCode, ShouldEqual, 0)
 	Wish(t, stderr, ShouldEqual, Dedent(`
@@ -39,12 +40,11 @@ func TestEmergeInModule(t *testing.T) {
 	`))
 }
 
-// SOON: lint should also be tested to work on a *workspace* catalog
-//func TestLint(t *testing.T) {
-//	exitCode, stdout, stderr := RunIntoBuffer("stellar", "catalog", "lint")
-//	Wish(t, exitCode, ShouldEqual, 0)
-//	Wish(t, stdout, ShouldEqual, "")
-//	Wish(t, stderr, ShouldEqual, Dedent(`
-//		0 total warnings
-//	`))
-//}
+func TestLint(t *testing.T) {
+	exitCode, stdout, stderr := RunIntoBuffer("stellar", "catalog", "lint", ".timeless/catalogs/upstream")
+	Wish(t, exitCode, ShouldEqual, 0)
+	Wish(t, stdout, ShouldEqual, "")
+	Wish(t, stderr, ShouldEqual, Dedent(`
+		0 total warnings
+	`))
+}
