@@ -11,18 +11,20 @@ import (
 	"github.com/polydawn/refmt"
 	"github.com/polydawn/refmt/json"
 	"github.com/polydawn/refmt/obj/atlas"
+	"github.com/warpfork/go-errcat"
 
 	"go.polydawn.net/go-timeless-api"
 	"go.polydawn.net/go-timeless-api/funcs"
+	"go.polydawn.net/go-timeless-api/hitch"
 	"go.polydawn.net/go-timeless-api/repeatr/client/exec"
 	"go.polydawn.net/stellar/gadgets/catalog"
-	"go.polydawn.net/stellar/gadgets/catalog/hitch"
+	hitchGadget "go.polydawn.net/stellar/gadgets/catalog/hitch"
 	"go.polydawn.net/stellar/gadgets/ingest"
 	"go.polydawn.net/stellar/gadgets/layout"
 	"go.polydawn.net/stellar/gadgets/module"
 )
 
-func EvalModule(landmarks layout.Landmarks, mod api.Module, stdout, stderr io.Writer) error {
+func EvalModule(landmarks layout.Landmarks, sagaName *catalog.SagaName, mod api.Module, stdout, stderr io.Writer) error {
 	fmt.Fprintf(stderr, "module loaded\n")
 	ord, err := funcs.ModuleOrderStepsDeep(mod)
 	if err != nil {
@@ -36,7 +38,7 @@ func EvalModule(landmarks layout.Landmarks, mod api.Module, stdout, stderr io.Wr
 	wareStaging := api.WareStaging{ByPackType: map[api.PackType]api.WarehouseLocation{"tar": landmarks.StagingWarehouse}}
 	wareSourcing := api.WareSourcing{}
 	wareSourcing.AppendByPackType("tar", landmarks.StagingWarehouse)
-	catalogHandle := hitch.FSCatalog{[]catalog.Tree{
+	catalogHandle := hitchGadget.FSCatalog{[]catalog.Tree{
 		{landmarks.ModuleCatalogRoot},
 		{filepath.Join(landmarks.WorkspaceRoot, ".timeless/catalogs/upstream")}, // TODO fix hardcoded "upstream" param
 	}}
@@ -80,6 +82,28 @@ func EvalModule(landmarks layout.Landmarks, mod api.Module, stdout, stderr io.Wr
 	atl_exports := atlas.MustBuild(api.WareID_AtlasEntry)
 	if err := refmt.NewMarshallerAtlased(json.EncodeOptions{Line: []byte("\n"), Indent: []byte("\t")}, stdout, atl_exports).Marshal(exports); err != nil {
 		panic(err)
+	}
+
+	// If we have a saga name and we're in a workspace, save results!
+	//  These results will become available as a "candidate" release.
+	//  (It doesn't make sense to do this outside of a workspace, because no
+	//   one would be able to use it; nor could we guess our own module name.)
+	if sagaName != nil && landmarks.WorkspaceRoot != "" {
+		modName := api.ModuleName(landmarks.ModuleRoot)
+		if err := modName.Validate(); err != nil {
+			return errcat.ErrorDetailed(
+				hitch.ErrUsage,
+				fmt.Sprintf("module %q: not a valid module name: %s", modName, err),
+				map[string]string{
+					"ref": string(modName),
+				})
+		}
+		if err := catalog.SaveCandidateRelease(landmarks, *sagaName, modName, exports, stderr); err != nil {
+			return err
+		}
+		if err := catalog.SaveCandidateReplay(landmarks, *sagaName, modName, mod, stderr); err != nil {
+			return err
+		}
 	}
 	return nil
 }

@@ -35,10 +35,10 @@ func (tree Tree) SaveModuleCatalog(modName api.ModuleName, modCat api.ModuleCata
 				"ref": string(modName),
 			})
 	}
-	if err := os.MkdirAll(filepath.Join(tree.Root, string(modName)), 0644); err != nil {
+	if err := os.MkdirAll(filepath.Join(tree.Root, string(modName)), 0755); err != nil {
 		return errcat.ErrorDetailed(
 			hitch.ErrCorruptState,
-			fmt.Sprintf("module %s could not be saved: %s", modName, err),
+			fmt.Sprintf("catalog for module %s could not be saved: %s", modName, err),
 			map[string]string{
 				"ref": string(modName),
 			})
