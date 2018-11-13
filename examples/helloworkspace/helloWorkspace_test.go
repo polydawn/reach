@@ -22,7 +22,6 @@ func TestEmergeInModule(t *testing.T) {
 	os.Chdir("projBar")
 	exitCode, stdout, stderr := RunIntoBuffer("stellar", "emerge")
 	Wish(t, exitCode, ShouldEqual, 0)
-	Wish(t, stdout, ShouldEqual, "")
 	Wish(t, stderr, ShouldEqual, Dedent(`
 		module loaded
 		module contains 1 steps
@@ -32,7 +31,11 @@ func TestEmergeInModule(t *testing.T) {
 		  - "base": tar:6q7G4hWr283FpTa5Lf8heVqw9t97b5VoMU6AGszuBYAz9EzQdeHVFAou7c4W9vFcQ6
 		module eval complete.
 		module exports:
-		  - "wowslot": tar:89LoLzgAYkndYpNQC7H94eR6tU6F4EWy2yFGouDCQz1cx9JpYmEPyDm2YWwYTGDvPv
+	`))
+	Wish(t, stdout, ShouldEqual, Dedent(`
+		{
+			"wowslot": "tar:89LoLzgAYkndYpNQC7H94eR6tU6F4EWy2yFGouDCQz1cx9JpYmEPyDm2YWwYTGDvPv"
+		}
 	`))
 }
 
