@@ -77,8 +77,8 @@ func EvalModule(landmarks layout.Landmarks, mod api.Module, stdout, stderr io.Wr
 	//	for k, v := range exports {
 	//		fmt.Fprintf(stderr, "  - %q: %v\n", k, v)
 	//	}
-	asdf := atlas.MustBuild(api.WareID_AtlasEntry)
-	if err := refmt.NewMarshallerAtlased(json.EncodeOptions{Line: []byte("\n"), Indent: []byte("\t")}, os.Stdout, asdf).Marshal(exports); err != nil {
+	atl_exports := atlas.MustBuild(api.WareID_AtlasEntry)
+	if err := refmt.NewMarshallerAtlased(json.EncodeOptions{Line: []byte("\n"), Indent: []byte("\t")}, stdout, atl_exports).Marshal(exports); err != nil {
 		panic(err)
 	}
 	return nil
