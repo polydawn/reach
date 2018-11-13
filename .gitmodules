@@ -61,3 +61,6 @@
 [submodule ".gopath/src/github.com/warpfork/go-sup"]
 	path = .gopath/src/github.com/warpfork/go-sup
 	url = https://github.com/warpfork/go-sup
+[submodule ".gopath/src/go.polydawn.net/rio"]
+	path = .gopath/src/go.polydawn.net/rio
+	url = https://github.com/polydawn/rio
