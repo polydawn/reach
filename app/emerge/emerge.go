@@ -89,7 +89,7 @@ func EvalModule(landmarks layout.Landmarks, sagaName *catalog.SagaName, mod api.
 	//  (It doesn't make sense to do this outside of a workspace, because no
 	//   one would be able to use it; nor could we guess our own module name.)
 	if sagaName != nil && landmarks.WorkspaceRoot != "" {
-		modName := api.ModuleName(landmarks.ModuleRoot)
+		modName := api.ModuleName(landmarks.ModulePathInsideWorkspace)
 		if err := modName.Validate(); err != nil {
 			return errcat.ErrorDetailed(
 				hitch.ErrUsage,
