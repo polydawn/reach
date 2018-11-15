@@ -53,7 +53,8 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 					if err != nil {
 						return fmt.Errorf("error loading module: %s", err)
 					}
-					return emergeApp.EvalModule(*landmarks, *mod, stdout, stderr)
+					sn, _ := catalog.ParseSagaName("hax") // TODO more complicated defaults and flags
+					return emergeApp.EvalModule(*landmarks, sn, *mod, stdout, stderr)
 				},
 			},
 			{

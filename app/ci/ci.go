@@ -43,7 +43,7 @@ func Loop(landmarks layout.Landmarks, mod api.Module, stdout, stderr io.Writer) 
 			continue
 		}
 		fmt.Fprintf(stderr, "found new git hash!  evaluating %s\n", newlyIngested)
-		if err := emergeApp.EvalModule(landmarks, mod, stdout, stderr); err != nil {
+		if err := emergeApp.EvalModule(landmarks, nil, mod, stdout, stderr); err != nil {
 			return err
 		}
 		fmt.Fprintf(stderr, "CI execution done, successfully.  Going into standby until more changes.\n")

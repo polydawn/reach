@@ -11,13 +11,18 @@ import (
 // Landmarks holds all the major context-defining filesystem paths.
 // Either module, or workspace, or both, or neither may be defined.
 // (If it's neither, you're probably not getting much done, of course.)
+//
+// If FindLandmarks started with a relative path, all landmarks will be
+// relative; if it was absolute, they'll all be absolute.
+// The "*InsideWorkspace" paths are always relative and do not start with "./".
 type Landmarks struct {
-	ModuleRoot          string                // Path of module root (dir contains .timeless and (probably) module.tl), if any.
-	ModuleFile          string                // Path of the module file (typically $moduleRoot/module.tl
-	ModuleCatalogRoot   string                // Path to the module catalog root (typically $moduleRoot/.timeless/catalog/).
-	WorkspaceRoot       string                // Path of the workspace root (dir contains .timeless and workspace.tl), if any.
-	PathInsideWorkspace string                // Path we are 'at' inside the workspaceRoot.
-	StagingWarehouse    api.WarehouseLocation // Address for a local warehouse (ca+file) where we'll store intermediates.
+	ModuleRoot                string                // Path of module root (dir contains .timeless and (probably) module.tl), if any.
+	ModuleFile                string                // Path of the module file (typically $moduleRoot/module.tl
+	ModuleCatalogRoot         string                // Path to the module catalog root (typically $moduleRoot/.timeless/catalog/).
+	WorkspaceRoot             string                // Path of the workspace root (dir contains .timeless and workspace.tl), if any.
+	PathInsideWorkspace       string                // Path we are 'at' inside the workspaceRoot.  May be deeper than ModulePathInsideWorkspace; does not imply ModulePathInsideWorkspace is set.
+	ModulePathInsideWorkspace string                // Path that contains 'module.tl' as relativized workspace.  Empty if no WorkspaceRoot.  Is likely the module's name, but you should run that through workspace config.
+	StagingWarehouse          api.WarehouseLocation // Address for a local warehouse (ca+file) where we'll store intermediates.
 }
 
 // FindLandmarks walks up the given path and looks for landmark files and dirs.
@@ -84,7 +89,7 @@ func FindLandmarks(startPath string) (*Landmarks, error) {
 				}
 				dirHasKnownRole = true
 				marks.WorkspaceRoot = dir
-				marks.PathInsideWorkspace = filepath.Clean(startPath[len(dir):])
+				marks.PathInsideWorkspace = startClean[len(dir):]
 				marks.StagingWarehouse = api.WarehouseLocation("ca+file://" + dir + "/.timeless/warehouse")
 			case ".timeless":
 				if !fi.IsDir() {
@@ -103,7 +108,7 @@ func FindLandmarks(startPath string) (*Landmarks, error) {
 			pth := filepath.Join(dir, ".timeless/module.tl")
 			fi, err := os.Stat(pth)
 			if os.IsNotExist(err) {
-				return marks, fmt.Errorf("'.timeless' dir found but unaccompanied %q)", dir)
+				return marks, fmt.Errorf("'.timeless' dir found but unaccompanied at %q; maybe you want to make a module.tl or workspace.tl file?", dir)
 			}
 			if err != nil {
 				return marks, err
@@ -119,6 +124,10 @@ func FindLandmarks(startPath string) (*Landmarks, error) {
 		}
 		// If we found a workspace, woot, let's go home.
 		if marks.WorkspaceRoot != "" {
+			// But first, derive any more {foo}-relative-to-workspace paths.
+			if marks.ModuleRoot != "" {
+				marks.ModulePathInsideWorkspace = marks.ModuleRoot[len(marks.WorkspaceRoot)+1:]
+			}
 			return marks, nil
 		}
 		// If basename'ing got us "/" this time, and we still didn't find it, terminate.

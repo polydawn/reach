@@ -12,20 +12,21 @@ import (
 	"go.polydawn.net/stellar/gadgets/catalog"
 )
 
-// FUTURE: a stateful delegating wrapper that injects "candidate" build data.
-
 // FUTURE: a caching wrapper.
 
-var (
-	_ hitch.ViewCatalogTool    = FSCatalog{}.ViewCatalog
-	_ hitch.ViewWarehousesTool = FSCatalog{}.ViewWarehouses
-)
+func ViewTools(trees ...catalog.Tree) (
+	hitch.ViewCatalogTool,
+	hitch.ViewWarehousesTool,
+) {
+	cat := basicCatalog{trees}
+	return cat.ViewCatalog, cat.ViewWarehouses
+}
 
-type FSCatalog struct {
+type basicCatalog struct {
 	Trees []catalog.Tree // Reads probe linearly down.
 }
 
-func (cat FSCatalog) ViewCatalog(
+func (cat basicCatalog) ViewCatalog(
 	ctx context.Context,
 	modName api.ModuleName,
 ) (modCat *api.ModuleCatalog, err error) {
@@ -43,7 +44,7 @@ func (cat FSCatalog) ViewCatalog(
 	return
 }
 
-func (cat FSCatalog) ViewWarehouses(
+func (cat basicCatalog) ViewWarehouses(
 	ctx context.Context,
 	modName api.ModuleName,
 ) (ws *api.WareSourcing, err error) {
