@@ -1,26 +1,22 @@
 {
 	"imports": {
 		"base": "catalog:froob.org/base:v1:linux-amd64"
+		"pipe": "catalog:example.org/proj-foo:candidate:wowslot"
 	},
 	"steps": {
 		"main": {
 			"operation": {
 				"inputs": {
 					"base": "/"
+					"pipe": "/task/in"
 				},
 				"action": {
 					"exec": [
 						"/bin/bash", "-c",
-						"echo heyo | tee /task/out"
+						"[[ $(cat /task/in) == 'hello' ]]"
 					]
-				},
-				"outputs": {
-					"out": "/task/out"
 				}
 			}
 		}
-	},
-	"exports": {
-		"wowslot": "main.out"
 	}
 }

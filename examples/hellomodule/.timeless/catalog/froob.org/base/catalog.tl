@@ -8,7 +8,7 @@
 			},
 			"metadata": {
 				"optional": "foobaring"
-			}
+			},
 			"hazards": null
 		}
 	]
