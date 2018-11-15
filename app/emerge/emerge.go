@@ -38,15 +38,21 @@ func EvalModule(landmarks layout.Landmarks, sagaName *catalog.SagaName, mod api.
 	wareStaging := api.WareStaging{ByPackType: map[api.PackType]api.WarehouseLocation{"tar": landmarks.StagingWarehouse}}
 	wareSourcing := api.WareSourcing{}
 	wareSourcing.AppendByPackType("tar", landmarks.StagingWarehouse)
-	catalogHandle := hitchGadget.FSCatalog{[]catalog.Tree{
+	viewCatalogTool, viewWarehousesTool := hitchGadget.ViewTools([]catalog.Tree{
 		{landmarks.ModuleCatalogRoot},
 		{filepath.Join(landmarks.WorkspaceRoot, ".timeless/catalogs/upstream")}, // TODO fix hardcoded "upstream" param
-	}}
+	}...)
+	if sagaName != nil {
+		viewCatalogTool = hitchGadget.WithCandidates(
+			viewCatalogTool,
+			catalog.Tree{filepath.Join(landmarks.WorkspaceRoot, ".timeless/candidates/", sagaName.String())},
+		)
+	}
 	resolveTool := ingest.Config{
 		landmarks.ModuleRoot,
 		wareStaging, // FUTURE: should probably use different warehouse for this, so it's easier to GC the shortlived objects
 	}.Resolve
-	pins, pinWs, err := funcs.ResolvePins(mod, catalogHandle.ViewCatalog, catalogHandle.ViewWarehouses, resolveTool)
+	pins, pinWs, err := funcs.ResolvePins(mod, viewCatalogTool, viewWarehousesTool, resolveTool)
 	if err != nil {
 		return err
 	}
