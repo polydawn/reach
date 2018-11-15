@@ -20,7 +20,7 @@ func TestEmergeOutsideModule(t *testing.T) {
 
 func TestEmergeInModule(t *testing.T) {
 	WithCwdClonedTmpDir(GetCwdAbs(), func() {
-		os.Chdir("projBar")
+		os.Chdir("proj-bar")
 		exitCode, stdout, stderr := RunIntoBuffer("stellar", "emerge")
 		Wish(t, exitCode, ShouldEqual, 0)
 		Wish(t, stderr, ShouldEqual, Dedent(`
