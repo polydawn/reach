@@ -30,7 +30,7 @@ func (tree Tree) SaveModuleCatalog(modName api.ModuleName, modCat api.ModuleCata
 	if err := modName.Validate(); err != nil {
 		return errcat.ErrorDetailed(
 			hitch.ErrUsage,
-			fmt.Sprintf("module %q: not a valid module name: %s", modName, err),
+			fmt.Sprintf("cannot save catalog: %q is not a valid module name: %s", modName, err),
 			map[string]string{
 				"ref": string(modName),
 			})
@@ -38,7 +38,7 @@ func (tree Tree) SaveModuleCatalog(modName api.ModuleName, modCat api.ModuleCata
 	if err := os.MkdirAll(filepath.Join(tree.Root, string(modName)), 0755); err != nil {
 		return errcat.ErrorDetailed(
 			hitch.ErrCorruptState,
-			fmt.Sprintf("catalog for module %s could not be saved: %s", modName, err),
+			fmt.Sprintf("cannot save catalog for module %q: %s", modName, err),
 			map[string]string{
 				"ref": string(modName),
 			})
@@ -134,7 +134,7 @@ func (tree Tree) expectModule(modName api.ModuleName) error {
 	if fi, err := os.Stat(modPath); err != nil || !fi.IsDir() {
 		return errcat.ErrorDetailed(
 			hitch.ErrNoSuchCatalog,
-			fmt.Sprintf("module %q not found: %q is not a dir", modName, modName),
+			fmt.Sprintf("module %q not found: %q is not a dir", modName, modPath),
 			map[string]string{
 				"ref": string(modName),
 			})

@@ -54,7 +54,9 @@ func EvalModule(landmarks layout.Landmarks, sagaName *catalog.SagaName, mod api.
 	}.Resolve
 	pins, pinWs, err := funcs.ResolvePins(mod, viewCatalogTool, viewWarehousesTool, resolveTool)
 	if err != nil {
-		return err
+		return errcat.Errorf(
+			"stellar-resolve-imports-failed",
+			"cannot resolve imports: %s", err)
 	}
 	wareSourcing.Append(*pinWs)
 	fmt.Fprintf(stderr, "imports pinned to hashes:\n")

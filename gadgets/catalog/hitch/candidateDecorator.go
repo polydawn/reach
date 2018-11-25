@@ -22,14 +22,22 @@ type candidateDecorator struct {
 func (cat candidateDecorator) ViewCatalog(
 	ctx context.Context,
 	modName api.ModuleName,
-) (modCat *api.ModuleCatalog, err error) {
+) (*api.ModuleCatalog, error) {
 	// Load main catalog first.
-	modCat, err = cat.ViewCatalogDelegate(ctx, modName)
+	modCat, err := cat.ViewCatalogDelegate(ctx, modName)
 	switch errcat.Category(err) {
 	case nil:
 		// continue!
 	case hitch.ErrNoSuchCatalog:
-		return cat.CandidateTree.LoadModuleCatalog(modName)
+		candidateModCat, err2 := cat.CandidateTree.LoadModuleCatalog(modName)
+		switch errcat.Category(err2) {
+		case nil:
+			return candidateModCat, nil
+		case hitch.ErrNoSuchCatalog:
+			return nil, err // better to return the "not found" from the delegate.
+		default:
+			return nil, err2
+		}
 	default:
 		return nil, err
 	}

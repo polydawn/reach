@@ -21,7 +21,7 @@ type Landmarks struct {
 	ModuleCatalogRoot         string                // Path to the module catalog root (typically $moduleRoot/.timeless/catalog/).
 	WorkspaceRoot             string                // Path of the workspace root (dir contains .timeless and workspace.tl), if any.
 	PathInsideWorkspace       string                // Path we are 'at' inside the workspaceRoot.  May be deeper than ModulePathInsideWorkspace; does not imply ModulePathInsideWorkspace is set.
-	ModulePathInsideWorkspace string                // Path that contains 'module.tl' as relativized workspace.  Empty if no WorkspaceRoot.  Is likely the module's name, but you should run that through workspace config.
+	ModulePathInsideWorkspace string                // Path that contains 'module.tl' as relativized workspace.  Empty if no WorkspaceRoot.  Also empty if the module and the workspace root are the same path(!) (as this is definitely an anonymous module).  Is likely the module's name, but you should run that through workspace config.
 	StagingWarehouse          api.WarehouseLocation // Address for a local warehouse (ca+file) where we'll store intermediates.
 }
 
@@ -126,7 +126,11 @@ func FindLandmarks(startPath string) (*Landmarks, error) {
 		if marks.WorkspaceRoot != "" {
 			// But first, derive any more {foo}-relative-to-workspace paths.
 			if marks.ModuleRoot != "" {
-				marks.ModulePathInsideWorkspace = marks.ModuleRoot[len(marks.WorkspaceRoot)+1:]
+				if len(marks.ModuleRoot) == len(marks.WorkspaceRoot) {
+					marks.ModulePathInsideWorkspace = ""
+				} else {
+					marks.ModulePathInsideWorkspace = marks.ModuleRoot[len(marks.WorkspaceRoot)+1:]
+				}
 			}
 			return marks, nil
 		}
