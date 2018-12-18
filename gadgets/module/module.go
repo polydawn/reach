@@ -10,8 +10,8 @@ import (
 	"go.polydawn.net/stellar/gadgets/layout"
 )
 
-func Load(landmarks layout.Landmarks) (mod *api.Module, err error) {
-	f, err := os.Open(landmarks.ModuleFile)
+func Load(landmarks layout.Module) (mod *api.Module, err error) {
+	f, err := os.Open(landmarks.ModuleFile())
 	if err != nil {
 		return
 	}

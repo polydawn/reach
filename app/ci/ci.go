@@ -10,9 +10,15 @@ import (
 	"go.polydawn.net/stellar/app/emerge"
 	"go.polydawn.net/stellar/gadgets/ingest/git"
 	"go.polydawn.net/stellar/gadgets/layout"
+	"go.polydawn.net/stellar/gadgets/workspace"
 )
 
-func Loop(landmarks layout.Landmarks, mod api.Module, stdout, stderr io.Writer) error {
+func Loop(
+	workspace workspace.Workspace, // ... shouldn't actually be needed, really.
+	landmarks layout.Module, // needed in case of ingests with relative paths.
+	mod api.Module, // already helpfully loaded for us.
+	stdout, stderr io.Writer,
+) error {
 	var hingeIngest api.ImportRef_Ingest
 	for _, imp := range mod.Imports {
 		switch imp2 := imp.(type) {
@@ -33,7 +39,7 @@ func Loop(landmarks layout.Landmarks, mod api.Module, stdout, stderr io.Writer) 
 	}
 	previouslyIngested := api.WareID{}
 	for {
-		gitResolve := gitingest.Config{landmarks.ModuleRoot}.Resolve
+		gitResolve := gitingest.Config{landmarks.ModuleRoot()}.Resolve
 		newlyIngested, _, err := gitResolve(context.Background(), hingeIngest)
 		if err != nil {
 			return err
@@ -43,7 +49,7 @@ func Loop(landmarks layout.Landmarks, mod api.Module, stdout, stderr io.Writer) 
 			continue
 		}
 		fmt.Fprintf(stderr, "found new git hash!  evaluating %s\n", newlyIngested)
-		if err := emergeApp.EvalModule(landmarks, nil, mod, stdout, stderr); err != nil {
+		if err := emergeApp.EvalModule(workspace, landmarks, nil, mod, stdout, stderr); err != nil {
 			return err
 		}
 		fmt.Fprintf(stderr, "CI execution done, successfully.  Going into standby until more changes.\n")

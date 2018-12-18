@@ -16,12 +16,14 @@ import (
 */
 
 func TestEmergeOutsideModule(t *testing.T) {
-	exitCode, stdout, stderr := RunIntoBuffer("stellar", "emerge")
-	Wish(t, exitCode, ShouldEqual, 1)
-	Wish(t, stdout, ShouldEqual, "")
-	Wish(t, stderr, ShouldEqual, Dedent(`
-		stellar: no module found -- run this command in a module dir (e.g contains module.tl file), or specify a path to one
-	`))
+	WithCwdClonedTmpDir(GetCwdAbs(), func() {
+		exitCode, stdout, stderr := RunIntoBuffer("stellar", "emerge")
+		Wish(t, exitCode, ShouldEqual, 1)
+		Wish(t, stdout, ShouldEqual, "")
+		Wish(t, stderr, ShouldEqual, Dedent(`
+			stellar: no module found
+		`))
+	})
 }
 
 func TestEmergeInModule(t *testing.T) {
@@ -93,6 +95,72 @@ func TestEmergeInModule(t *testing.T) {
 	})
 }
 
+func TestEmergeViaModuleArg(t *testing.T) {
+	WithCwdClonedTmpDir(GetCwdAbs(), func() {
+		exitCode, stdout, stderr := RunIntoBuffer("stellar", "emerge", "example.org/proj-foo")
+		Wish(t, exitCode, ShouldEqual, 0)
+		Wish(t, stderr, ShouldEqual, Dedent(`
+			module loaded
+			module contains 1 steps
+			module evaluation plan order:
+			  - 01: main
+			imports pinned to hashes:
+			  - "base": tar:6q7G4hWr283FpTa5Lf8heVqw9t97b5VoMU6AGszuBYAz9EzQdeHVFAou7c4W9vFcQ6
+			module eval complete.
+			module exports:
+		`))
+		Wish(t, stdout, ShouldEqual, Dedent(`
+			{
+				"wowslot": "tar:89LoLzgAYkndYpNQC7H94eR6tU6F4EWy2yFGouDCQz1cx9JpYmEPyDm2YWwYTGDvPv"
+			}
+		`))
+
+		t.Run("a candidate release should be recorded", func(t *testing.T) {
+			// n.b. we could test the presence of the files here, but
+			//  we'll choose not to.  That's not really a publicly exposed detail,
+			//   and our next functional tests confirm everything quite clearly.
+
+			t.Run("another module can consume the candidate", func(t *testing.T) {
+				exitCode, stdout, stderr := RunIntoBuffer("stellar", "emerge", "example.org/proj-bar")
+				Wish(t, exitCode, ShouldEqual, 0)
+				Wish(t, stderr, ShouldEqual, Dedent(`
+					module loaded
+					module contains 1 steps
+					module evaluation plan order:
+					  - 01: main
+					imports pinned to hashes:
+					  - "base": tar:6q7G4hWr283FpTa5Lf8heVqw9t97b5VoMU6AGszuBYAz9EzQdeHVFAou7c4W9vFcQ6
+					  - "pipe": tar:89LoLzgAYkndYpNQC7H94eR6tU6F4EWy2yFGouDCQz1cx9JpYmEPyDm2YWwYTGDvPv
+					module eval complete.
+					module exports:
+				`))
+				Wish(t, stdout, ShouldEqual, Dedent(`
+					{}
+				`))
+			})
+
+			t.Run("the non-candidate release is still visible", func(t *testing.T) {
+				exitCode, stdout, stderr := RunIntoBuffer("stellar", "emerge", "example.org/proj-baz")
+				Wish(t, exitCode, ShouldEqual, 0)
+				Wish(t, stderr, ShouldEqual, Dedent(`
+					module loaded
+					module contains 1 steps
+					module evaluation plan order:
+					  - 01: main
+					imports pinned to hashes:
+					  - "base": tar:6q7G4hWr283FpTa5Lf8heVqw9t97b5VoMU6AGszuBYAz9EzQdeHVFAou7c4W9vFcQ6
+					  - "pipe": tar:6q7G4hWr283FpTa5Lf8heVqw9t97b5VoMU6AGszuBYAz9EzQdeHVFAou7c4W9vFcQ6
+					module eval complete.
+					module exports:
+				`))
+				Wish(t, stdout, ShouldEqual, Dedent(`
+					{}
+				`))
+			})
+		})
+	})
+}
+
 // TODO TestEmergeRecursion
 // two modes:
 //  - default: halt with warning, because no such release found while resolving pins.
@@ -100,7 +168,7 @@ func TestEmergeInModule(t *testing.T) {
 // the halt mode will currently happen; recursion mode needs a bunch o' code :)
 
 func TestLint(t *testing.T) {
-	exitCode, stdout, stderr := RunIntoBuffer("stellar", "catalog", "lint", ".timeless/catalogs/upstream")
+	exitCode, stdout, stderr := RunIntoBuffer("stellar", "catalog", "lint", ".timeless/catalog")
 	Wish(t, exitCode, ShouldEqual, 0)
 	Wish(t, stdout, ShouldEqual, "")
 	Wish(t, stderr, ShouldEqual, Dedent(`
