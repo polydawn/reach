@@ -6,7 +6,7 @@
 		"main": {
 			"operation": {
 				"inputs": {
-					"base": "/"
+					"/": "base"
 				},
 				"action": {
 					"exec": [

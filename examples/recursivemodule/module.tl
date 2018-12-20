@@ -6,7 +6,7 @@
 		"step-first": {
 			"operation": {
 				"inputs": {
-					"base": "/"
+					"/": "base"
 				},
 				"action": {
 					"exec": [
@@ -29,8 +29,8 @@
 					"boop": {
 						"operation": {
 							"inputs": {
-								"image": "/",
-								"thingy": "/task/thingy"
+								"/": "image",
+								"/task/thingy": "thingy"
 							},
 							"action": {
 								"exec": [
@@ -46,7 +46,7 @@
 					"bap": {
 						"operation": {
 							"inputs": {
-								"image": "/"
+								"/": "image"
 							},
 							"action": {
 								"exec": [
@@ -69,9 +69,9 @@
 		"step-after": {
 			"operation": {
 				"inputs": {
-					"base": "/",
-					"submodule-jamboree.frob": "/task/frob",
-					"submodule-jamboree.snoz": "/task/snoz"
+					"/": "base",
+					"/task/frob": "submodule-jamboree.frob",
+					"/task/snoz": "submodule-jamboree.snoz"
 				},
 				"action": {
 					"exec": [
