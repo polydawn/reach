@@ -15,6 +15,7 @@ import (
 	"go.polydawn.net/stellar/gadgets/catalog"
 	"go.polydawn.net/stellar/gadgets/layout"
 	"go.polydawn.net/stellar/gadgets/module"
+	"go.polydawn.net/stellar/gadgets/workspace"
 )
 
 func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io.Writer) (exitCode int) {
@@ -28,55 +29,82 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 				Name:  "emerge",
 				Usage: "evaluate a pipeline, logging intermediate results and reporting final exports",
 				Action: func(args *cli.Context) error {
-					pth := ""
-					switch args.NArg() {
-					case 0:
-						cwd, err := os.Getwd()
-						if err != nil {
-							return err
-						}
-						pth = cwd
-					case 1:
-						pth = args.Args()[0]
-					default:
-						return fmt.Errorf("'stellar emerge' takes zero or one args")
-					}
-
-					landmarks, err := layout.FindLandmarks(pth)
+					cwd, err := os.Getwd()
 					if err != nil {
 						return err
 					}
-					if landmarks.ModuleRoot == "" {
-						return fmt.Errorf("no module found -- run this command in a module dir (e.g contains module.tl file), or specify a path to one")
+
+					// Find workspace.
+					workspaceLayout, err := layout.FindWorkspace(cwd)
+					if err != nil {
+						return err
 					}
-					mod, err := module.Load(*landmarks)
+
+					// Find (or expect) module (depending on args style).
+					var moduleLayout *layout.Module
+					switch args.NArg() {
+					case 0:
+						moduleLayout, err = layout.FindModule(*workspaceLayout, cwd)
+					case 1:
+						moduleLayout, err = layout.ExpectModule(*workspaceLayout, filepath.Join(cwd, args.Args()[0]))
+					default:
+						return fmt.Errorf("'stellar emerge' takes zero or one args")
+					}
+					if err != nil {
+						return err
+					}
+
+					// Load module and load workspace conf.
+					mod, err := module.Load(*moduleLayout)
 					if err != nil {
 						return fmt.Errorf("error loading module: %s", err)
 					}
+					workspace := workspace.Workspace{*workspaceLayout}
+
+					// Parse other flags.
 					sn, _ := catalog.ParseSagaName("hax") // TODO more complicated defaults and flags
-					return emergeApp.EvalModule(*landmarks, sn, *mod, stdout, stderr)
+
+					// Go!
+					return emergeApp.EvalModule(workspace, *moduleLayout, sn, *mod, stdout, stderr)
 				},
 			},
 			{
 				Name:  "ci",
 				Usage: "given a module with one ingest using git, build it once, then build it again each time the git repo updates",
-				Action: func(ctx *cli.Context) error {
+				Action: func(args *cli.Context) error {
 					cwd, err := os.Getwd()
 					if err != nil {
 						return err
 					}
-					landmarks, err := layout.FindLandmarks(cwd)
+
+					// Find workspace.
+					workspaceLayout, err := layout.FindWorkspace(cwd)
 					if err != nil {
 						return err
 					}
-					if landmarks.ModuleRoot == "" {
-						return fmt.Errorf("no module found -- run this command in a module dir (e.g contains module.tl file), or specify a path to one")
+
+					// Find (or expect) module (depending on args style).
+					var moduleLayout *layout.Module
+					switch args.NArg() {
+					case 0:
+						moduleLayout, err = layout.FindModule(*workspaceLayout, cwd)
+					case 1:
+						moduleLayout, err = layout.ExpectModule(*workspaceLayout, filepath.Join(cwd, args.Args()[0]))
+					default:
+						return fmt.Errorf("'stellar ci' takes zero or one args")
 					}
-					mod, err := module.Load(*landmarks)
+					if err != nil {
+						return err
+					}
+
+					// Load module and load workspace conf.
+					mod, err := module.Load(*moduleLayout)
 					if err != nil {
 						return fmt.Errorf("error loading module: %s", err)
 					}
-					return ciApp.Loop(*landmarks, *mod, stdout, stderr)
+					workspace := workspace.Workspace{*workspaceLayout}
+
+					return ciApp.Loop(workspace, *moduleLayout, *mod, stdout, stderr)
 				},
 			},
 			{
@@ -100,14 +128,11 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 								if err != nil {
 									return err
 								}
-								landmarks, err := layout.FindLandmarks(cwd)
+								workspaceLayout, err := layout.FindWorkspace(cwd)
 								if err != nil {
 									return err
 								}
-								if landmarks.ModuleCatalogRoot == "" {
-									return fmt.Errorf("no catalog found")
-								}
-								pth = landmarks.ModuleCatalogRoot
+								pth = workspaceLayout.CatalogRoot()
 							case 1:
 								var err error
 								pth, err = filepath.Abs(args.Args()[0])

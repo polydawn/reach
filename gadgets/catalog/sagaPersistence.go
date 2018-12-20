@@ -8,9 +8,9 @@ import (
 	"go.polydawn.net/stellar/gadgets/layout"
 )
 
-func SaveCandidateRelease(landmarks layout.Landmarks, sagaName SagaName, modName api.ModuleName, content map[api.ItemName]api.WareID, stderr io.Writer) error {
+func SaveCandidateRelease(landmarks layout.Workspace, sagaName SagaName, modName api.ModuleName, content map[api.ItemName]api.WareID, stderr io.Writer) error {
 	tree := Tree{
-		filepath.Join(landmarks.WorkspaceRoot, ".timeless/candidates/", sagaName.String()),
+		filepath.Join(landmarks.WorkspaceRoot(), ".timeless/candidates/", sagaName.String()),
 	}
 	return tree.SaveModuleCatalog(modName, api.ModuleCatalog{
 		Name: modName,
@@ -30,9 +30,9 @@ func SaveCandidateRelease(landmarks layout.Landmarks, sagaName SagaName, modName
 // to recheck idempotently (we wouldn't want insanity to result from
 // killing the stellar process during that eviction phase!).
 
-func SaveCandidateReplay(landmarks layout.Landmarks, sagaName SagaName, modName api.ModuleName, mod api.Module, stderr io.Writer) error {
+func SaveCandidateReplay(landmarks layout.Workspace, sagaName SagaName, modName api.ModuleName, mod api.Module, stderr io.Writer) error {
 	tree := Tree{
-		filepath.Join(landmarks.WorkspaceRoot, ".timeless/candidates/", sagaName.String()),
+		filepath.Join(landmarks.WorkspaceRoot(), ".timeless/candidates/", sagaName.String()),
 	}
 
 	// Rewrite ingests

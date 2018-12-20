@@ -15,16 +15,22 @@ import (
 
 	"go.polydawn.net/go-timeless-api"
 	"go.polydawn.net/go-timeless-api/funcs"
-	"go.polydawn.net/go-timeless-api/hitch"
 	"go.polydawn.net/go-timeless-api/repeatr/client/exec"
 	"go.polydawn.net/stellar/gadgets/catalog"
 	hitchGadget "go.polydawn.net/stellar/gadgets/catalog/hitch"
 	"go.polydawn.net/stellar/gadgets/ingest"
 	"go.polydawn.net/stellar/gadgets/layout"
 	"go.polydawn.net/stellar/gadgets/module"
+	"go.polydawn.net/stellar/gadgets/workspace"
 )
 
-func EvalModule(landmarks layout.Landmarks, sagaName *catalog.SagaName, mod api.Module, stdout, stderr io.Writer) error {
+func EvalModule(
+	workspace workspace.Workspace, // needed to figure out if we have a moduleName.
+	landmarks layout.Module, // needed in case of ingests with relative paths.
+	sagaName *catalog.SagaName, // may have been provided as a flag.
+	mod api.Module, // already helpfully loaded for us.
+	stdout, stderr io.Writer,
+) error {
 	fmt.Fprintf(stderr, "module loaded\n")
 	ord, err := funcs.ModuleOrderStepsDeep(mod)
 	if err != nil {
@@ -35,21 +41,22 @@ func EvalModule(landmarks layout.Landmarks, sagaName *catalog.SagaName, mod api.
 	for i, fullStepRef := range ord {
 		fmt.Fprintf(stderr, "  - %.2d: %s\n", i+1, fullStepRef)
 	}
-	wareStaging := api.WareStaging{ByPackType: map[api.PackType]api.WarehouseLocation{"tar": landmarks.StagingWarehouse}}
+	wareStaging := api.WareStaging{ByPackType: map[api.PackType]api.WarehouseLocation{"tar": landmarks.StagingWarehouseLoc()}}
 	wareSourcing := api.WareSourcing{}
-	wareSourcing.AppendByPackType("tar", landmarks.StagingWarehouse)
+	wareSourcing.AppendByPackType("tar", landmarks.StagingWarehouseLoc())
 	viewCatalogTool, viewWarehousesTool := hitchGadget.ViewTools([]catalog.Tree{
-		{landmarks.ModuleCatalogRoot},
-		{filepath.Join(landmarks.WorkspaceRoot, ".timeless/catalogs/upstream")}, // TODO fix hardcoded "upstream" param
+		// refactor note: we used to stack several catalog dirs here, but have backtracked from allowing that.
+		// so it's possible there's a layer of abstraction here that should be removed outright; have not fully reviewed.
+		{landmarks.CatalogRoot()},
 	}...)
 	if sagaName != nil {
 		viewCatalogTool = hitchGadget.WithCandidates(
 			viewCatalogTool,
-			catalog.Tree{filepath.Join(landmarks.WorkspaceRoot, ".timeless/candidates/", sagaName.String())},
+			catalog.Tree{filepath.Join(landmarks.WorkspaceRoot(), ".timeless/candidates/", sagaName.String())},
 		)
 	}
 	resolveTool := ingest.Config{
-		landmarks.ModuleRoot,
+		landmarks.ModuleRoot(),
 		wareStaging, // FUTURE: should probably use different warehouse for this, so it's easier to GC the shortlived objects
 	}.Resolve
 	pins, pinWs, err := funcs.ResolvePins(mod, viewCatalogTool, viewWarehousesTool, resolveTool)
@@ -69,7 +76,7 @@ func EvalModule(landmarks layout.Landmarks, sagaName *catalog.SagaName, mod api.
 		fmt.Fprintf(stderr, "  - %q: %s\n", k, pins[k])
 	}
 	// step step step!
-	os.Setenv("REPEATR_MEMODIR", filepath.Join(landmarks.WorkspaceRoot, ".timeless/memo"))
+	os.Setenv("REPEATR_MEMODIR", landmarks.MemoDir())
 	exports, err := module.Evaluate(
 		context.Background(),
 		mod,
@@ -92,26 +99,22 @@ func EvalModule(landmarks layout.Landmarks, sagaName *catalog.SagaName, mod api.
 		panic(err)
 	}
 
-	// If we have a saga name and we're in a workspace, save results!
-	//  These results will become available as a "candidate" release.
-	//  (It doesn't make sense to do this outside of a workspace, because no
-	//   one would be able to use it; nor could we guess our own module name.)
-	if sagaName != nil && landmarks.WorkspaceRoot != "" {
-		modName := api.ModuleName(landmarks.ModulePathInsideWorkspace)
-		if err := modName.Validate(); err != nil {
-			return errcat.ErrorDetailed(
-				hitch.ErrUsage,
-				fmt.Sprintf("module %q: not a valid module name: %s", modName, err),
-				map[string]string{
-					"ref": string(modName),
-				})
-		}
-		if err := catalog.SaveCandidateRelease(landmarks, *sagaName, modName, exports, stderr); err != nil {
-			return err
-		}
-		if err := catalog.SaveCandidateReplay(landmarks, *sagaName, modName, mod, stderr); err != nil {
-			return err
-		}
+	// If we have a saga name and we're not an anon module, save a "candidate" release!
+	if sagaName == nil {
+		return nil
+	}
+	modName, err := workspace.ResolveModuleName(landmarks)
+	if err != nil {
+		return err // FIXME detect this WAY earlier.
+	}
+	if modName == nil {
+		return nil
+	}
+	if err := catalog.SaveCandidateRelease(landmarks.Workspace, *sagaName, *modName, exports, stderr); err != nil {
+		return err
+	}
+	if err := catalog.SaveCandidateReplay(landmarks.Workspace, *sagaName, *modName, mod, stderr); err != nil {
+		return err
 	}
 	return nil
 }
