@@ -2,11 +2,13 @@ package workspace
 
 import (
 	"fmt"
+	"path"
 	"strings"
 
 	"github.com/warpfork/go-errcat"
 
 	"go.polydawn.net/go-timeless-api"
+	"go.polydawn.net/go-timeless-api/funcs"
 	"go.polydawn.net/go-timeless-api/hitch"
 	"go.polydawn.net/stellar/gadgets/layout"
 )
@@ -71,5 +73,30 @@ func (ws Workspace) ResolveModuleName(moduleLayout layout.Module) (*api.ModuleNa
 			})
 	}
 	return &modName, nil
+}
 
+// GetModuleLayout returns a layout.Module describing where we'd expect
+// such a module to be located.
+//
+// The module name must be matched by some part of the workspace's
+// module mapping config, or nil will be returned.
+// (Note: this feature is NYI, so nil will currently never be returned.)
+//
+// Providing an invalid ModuleName will panic.
+//
+// This function does not check whether or not a module file is actually
+// *present*; just describes where it is expected to be if present.
+// Use `module.Load` to actually load the content.
+func (ws Workspace) GetModuleLayout(modName api.ModuleName) *layout.Module {
+	// Sanity check modName.
+	funcs.MustValidate(modName)
+
+	// Future: check for config that remaps paths<->names.
+
+	// Assemble and return the module layout description struct.
+	modLayout := layout.NewModule(
+		ws.Layout,
+		path.Join(ws.Layout.WorkspaceRoot(), string(modName)),
+	)
+	return &modLayout
 }
