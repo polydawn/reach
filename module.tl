@@ -8,9 +8,9 @@
 		"build": {
 			"operation": {
 				"inputs": {
-					"base": "/",
-					"go": "/app/go",
-					"src": "/task"
+					"/": "base",
+					"/app/go": "go",
+					"/task": "src"
 				},
 				"action": {
 					"exec": [
@@ -26,8 +26,8 @@
 		"test": {
 			"operation": {
 				"inputs": {
-					"base": "/",
-					"build.bin": "/task"
+					"/": "base",
+					"/task": "build.bin"
 				},
 				"action": {
 					"exec": [
