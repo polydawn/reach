@@ -9,6 +9,7 @@ import (
 
 	"github.com/urfave/cli"
 
+	"go.polydawn.net/go-timeless-api"
 	"go.polydawn.net/stellar/app/catalog"
 	"go.polydawn.net/stellar/app/ci"
 	"go.polydawn.net/stellar/app/emerge"
@@ -35,44 +36,66 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 			{
 				Name:  "emerge",
 				Usage: "evaluate a pipeline, logging intermediate results and reporting final exports",
+				Flags: []cli.Flag{
+					cli.BoolFlag{
+						Name:  "r, recursive",
+						Usage: "if set, module evaluation will allow recursion: imports of candidate releases -- e.g., of the form \"catalog:$module:candidate:$item\" -- will cause that module to be freshly built rather than using an existing release.",
+					},
+				},
 				Action: func(args *cli.Context) error {
 					cwd, err := os.Getwd()
 					if err != nil {
 						return err
 					}
 
+					// Parse other flags.
+					sn, _ := catalog.ParseSagaName("default") // TODO more complicated defaults and flags
+
 					// Find workspace.
 					workspaceLayout, err := layout.FindWorkspace(cwd)
 					if err != nil {
 						return err
 					}
-
-					// Find (or expect) module (depending on args style).
-					var moduleLayout *layout.Module
-					switch args.NArg() {
-					case 0:
-						moduleLayout, err = layout.FindModule(*workspaceLayout, cwd)
-					case 1:
-						moduleLayout, err = layout.ExpectModule(*workspaceLayout, filepath.Join(cwd, args.Args()[0]))
-					default:
-						return fmt.Errorf("'stellar emerge' takes zero or one args")
-					}
-					if err != nil {
-						return err
-					}
-
-					// Load module and load workspace conf.
-					mod, err := module.Load(*moduleLayout)
-					if err != nil {
-						return fmt.Errorf("error loading module: %s", err)
-					}
 					workspace := workspace.Workspace{*workspaceLayout}
 
-					// Parse other flags.
-					sn, _ := catalog.ParseSagaName("hax") // TODO more complicated defaults and flags
+					// Behavior switch based on whether or not recursion is allowed.
+					//  Future: unify these more...
+					if args.Bool("recursive") {
+						// Flip args into module names
+						//  FIXME: anon invocation not sensibly handled here
+						moduleNames := []api.ModuleName(nil)
+						for _, arg := range args.Args() {
+							moduleNames = append(moduleNames, api.ModuleName(arg))
+						}
 
-					// Go!
-					return emergeApp.EvalModule(workspace, *moduleLayout, sn, *mod, stdout, stderr)
+						// Go!
+						return emergeApp.EmergeMulti(workspace, moduleNames, *sn, stdout, stderr)
+					} else {
+						// Find (or expect) module (depending on args style).
+						//  The arg is expected to be a *path* (not a module name
+						//   (although the two are currently the same in practice)).
+						var moduleLayout *layout.Module
+						switch args.NArg() {
+						case 0:
+							moduleLayout, err = layout.FindModule(*workspaceLayout, cwd)
+						case 1:
+							moduleLayout, err = layout.ExpectModule(*workspaceLayout, filepath.Join(cwd, args.Args()[0]))
+						default:
+							return fmt.Errorf("'stellar emerge' takes zero or one args")
+						}
+						if err != nil {
+							return err
+						}
+
+						// Load module.
+						mod, err := module.Load(*moduleLayout)
+						if err != nil {
+							return fmt.Errorf("error loading module: %s", err)
+						}
+
+						// Go!
+						return emergeApp.EvalModule(workspace, *moduleLayout, sn, *mod, stdout, stderr)
+					}
 				},
 			},
 			{

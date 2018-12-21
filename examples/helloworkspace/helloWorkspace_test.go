@@ -161,11 +161,22 @@ func TestEmergeViaModuleArg(t *testing.T) {
 	})
 }
 
-// TODO TestEmergeRecursion
-// two modes:
-//  - default: halt with warning, because no such release found while resolving pins.
-//  - if recursion allowed: automatically fall into commission mode, and thus build the proj-bar candidate.
-// the halt mode will currently happen; recursion mode needs a bunch o' code :)
+func TestEmergeRecursion(t *testing.T) {
+	t.Run("one recursion (when not enabled) should fail", func(t *testing.T) {
+		WithCwdClonedTmpDir(GetCwdAbs(), func() {
+			exitCode, _, _ := RunIntoBuffer("stellar", "emerge", "example.org/proj-bar")
+			Wish(t, exitCode, ShouldEqual, 1)
+		})
+	})
+	t.Run("one recursion should succeed", func(t *testing.T) {
+		WithCwdClonedTmpDir(GetCwdAbs(), func() {
+			exitCode, _, _ := RunIntoBuffer("stellar", "emerge", "-r", "example.org/proj-bar")
+			Wish(t, exitCode, ShouldEqual, 0)
+		})
+	})
+	// TODO: more recursion tests
+	//  (but possibly start another example dir?  this one is complex enough.)
+}
 
 func TestLint(t *testing.T) {
 	exitCode, stdout, stderr := RunIntoBuffer("stellar", "catalog", "lint", ".timeless/catalog")
