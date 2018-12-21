@@ -20,10 +20,17 @@ import (
 
 func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io.Writer) (exitCode int) {
 	app := &cli.App{
-		Name:      "stellar",
-		Usage:     "sidereal repeatr",
-		UsageText: "Stellar builds modules of repeatr operations, stages releases of the results, and can commission builds of entire generations of atomic releases from many modules.",
-		Writer:    stderr,
+		Name: "stellar",
+		UsageText: "Stellar is a multipurpose tool for driving and managing Timeless Stack projects.\n" +
+			"   Major functions of `stellar` include:\n" +
+			"\n" +
+			"     - evaluating modules, which run pipelines of repeatr operations;\n" +
+			"     - staging release candidates of the results;\n" +
+			"     - commissioning entire generations of builds from many modules;\n" +
+			"     - and publishing and managing release catalogs for distribution.\n" +
+			"\n" +
+			"   See https://repeatr.io/ for more complete documention!",
+		Writer: stderr,
 		Commands: []cli.Command{
 			{
 				Name:  "emerge",

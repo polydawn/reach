@@ -14,10 +14,18 @@ func TestNoargsHelptext(t *testing.T) {
 	Wish(t, stdout, ShouldEqual, "")
 	Wish(t, stderr, ShouldEqual, Dedent(`
 		NAME:
-		   stellar - sidereal repeatr
+		   stellar
 
 		USAGE:
-		   Stellar builds modules of repeatr operations, stages releases of the results, and can commission builds of entire generations of atomic releases from many modules.
+		   Stellar is a multipurpose tool for driving and managing Timeless Stack projects.
+		   Major functions of `+"`stellar`"+` include:
+
+		     - evaluating modules, which run pipelines of repeatr operations;
+		     - staging release candidates of the results;
+		     - commissioning entire generations of builds from many modules;
+		     - and publishing and managing release catalogs for distribution.
+
+		   See https://repeatr.io/ for more complete documention!
 
 		COMMANDS:
 		     emerge   evaluate a pipeline, logging intermediate results and reporting final exports
