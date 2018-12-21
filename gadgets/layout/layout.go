@@ -52,3 +52,10 @@ func (lm Module) ModuleRoot() string {
 func (lm Module) ModuleFile() string {
 	return filepath.Join(lm.moduleRoot, "module.tl")
 }
+
+// NewModule constructs a new layout.Module -- but is not intended for public use.
+// Use `layout.FindModule`, or `workspace.Workspace.GetModuleLayout` instead;
+// these methods match the semantics that should be used and check the invariants.
+func NewModule(ws Workspace, root string) Module {
+	return Module{ws, root}
+}
