@@ -34,6 +34,10 @@ func (lm Workspace) MemoDir() string {
 	// review: would we get better log messages if we resolved any symlinks first?
 	return filepath.Join(lm.workspaceRoot, ".timeless", "memo")
 }
+func (lm Workspace) StagingWarehousePath() string {
+	// review: would we get better log messages if we resolved any symlinks first?
+	return filepath.Join(lm.workspaceRoot, ".timeless", "warehouse")
+}
 func (lm Workspace) StagingWarehouseLoc() api.WarehouseLocation {
 	// review: would we get better log messages if we resolved any symlinks first?
 	return api.WarehouseLocation("ca+file://" + filepath.Join(lm.workspaceRoot, ".timeless", "warehouse"))

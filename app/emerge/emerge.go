@@ -54,6 +54,8 @@ func EvalModule(
 	wareStaging := api.WareStaging{ByPackType: map[api.PackType]api.WarehouseLocation{"tar": landmarks.StagingWarehouseLoc()}}
 	wareSourcing := api.WareSourcing{}
 	wareSourcing.AppendByPackType("tar", landmarks.StagingWarehouseLoc())
+	// Make the workspace's local warehouse dir if it doesn't exist.
+	os.Mkdir(landmarks.StagingWarehousePath(), 0755)
 
 	// Prepare catalog view tools.
 	//  Definitely includes the workspace catalog;
@@ -94,8 +96,11 @@ func EvalModule(
 		fmt.Fprintf(stderr, "  - %q: %s\n", k, pins[k])
 	}
 
-	// Configure memoization.
-	os.Setenv("REPEATR_MEMODIR", landmarks.MemoDir())
+	// Ensure memoization is enabled.
+	//  Future: this is a bit of an odd reach-around way to configure this.
+	//  PRs which propose more/better ways to enable and parameterize memoization would be extremely welcomed.
+	os.Setenv("REPEATR_MEMODIR", workspace.Layout.MemoDir())
+	os.Mkdir(workspace.Layout.MemoDir(), 0755) // Errors ignored.  Repeatr will emit warns, but work.
 
 	// Begin the evaluation!
 	exports, err := module.Evaluate(
