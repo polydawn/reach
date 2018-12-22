@@ -31,6 +31,9 @@ func EvalModule(
 	mod api.Module, // already helpfully loaded for us.
 	stdout, stderr io.Writer,
 ) error {
+	// Process the module DAG into a linear toposort of steps.
+	//  Any impossible graphs inside the module will error out here
+	//   (but we won't get to checking imports and ingests until later).
 	fmt.Fprintf(stderr, "module loaded\n")
 	ord, err := funcs.ModuleOrderStepsDeep(mod)
 	if err != nil {
@@ -41,9 +44,20 @@ func EvalModule(
 	for i, fullStepRef := range ord {
 		fmt.Fprintf(stderr, "  - %.2d: %s\n", i+1, fullStepRef)
 	}
+
+	// Configure defaults for warehousing.
+	//  We'll always consider the workspace's local dirs as a data source;
+	//  and we'll also use it as a place to store produced wares
+	//   (both for intermediates, final exports, and ingests).
+	//  The wareSourcing config may be accumulated along with others per formula;
+	//   this is just the starting point minimum configuration.
 	wareStaging := api.WareStaging{ByPackType: map[api.PackType]api.WarehouseLocation{"tar": landmarks.StagingWarehouseLoc()}}
 	wareSourcing := api.WareSourcing{}
 	wareSourcing.AppendByPackType("tar", landmarks.StagingWarehouseLoc())
+
+	// Prepare catalog view tools.
+	//  Definitely includes the workspace catalog;
+	//  may also include a view of "candidates" data, if a sagaName arg is present.
 	viewCatalogTool, viewWarehousesTool := hitchGadget.ViewTools([]catalog.Tree{
 		// refactor note: we used to stack several catalog dirs here, but have backtracked from allowing that.
 		// so it's possible there's a layer of abstraction here that should be removed outright; have not fully reviewed.
@@ -55,6 +69,10 @@ func EvalModule(
 			catalog.Tree{filepath.Join(landmarks.WorkspaceRoot(), ".timeless/candidates/", sagaName.String())},
 		)
 	}
+
+	// Resolve all imports.
+	//  This includes both viewing catalogs (cheap, fast),
+	//  *and invoking ingest* (potentially costly).
 	resolveTool := ingest.Config{
 		landmarks.ModuleRoot(),
 		wareStaging, // FUTURE: should probably use different warehouse for this, so it's easier to GC the shortlived objects
@@ -75,8 +93,11 @@ func EvalModule(
 	for _, k := range allSlotRefs {
 		fmt.Fprintf(stderr, "  - %q: %s\n", k, pins[k])
 	}
-	// step step step!
+
+	// Configure memoization.
 	os.Setenv("REPEATR_MEMODIR", landmarks.MemoDir())
+
+	// Begin the evaluation!
 	exports, err := module.Evaluate(
 		context.Background(),
 		mod,
@@ -90,6 +111,9 @@ func EvalModule(
 		return fmt.Errorf("evaluating module: %s", err)
 	}
 	fmt.Fprintf(stderr, "module eval complete.\n")
+
+	// Print the results!
+	//  This goes onto stdout as json, so it's parsible and pipeable.
 	fmt.Fprintf(stderr, "module exports:\n")
 	//	for k, v := range exports {
 	//		fmt.Fprintf(stderr, "  - %q: %v\n", k, v)
@@ -99,7 +123,10 @@ func EvalModule(
 		panic(err)
 	}
 
-	// If we have a saga name and we're not an anon module, save a "candidate" release!
+	// Save a "candidate" release!
+	//  ... If (!) we have a saga name and we're not an anon module.
+	//  (If we're an anon module, there's no name to save the candidate as;
+	//  if there's no saga name, that must've been on purpose.)
 	if sagaName == nil {
 		return nil
 	}
