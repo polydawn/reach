@@ -32,7 +32,7 @@
 				"action": {
 					"exec": [
 						"/bin/bash", "-c",
-						"./bin/stellar -h"
+						"./bin/reach -h"
 					]
 				}
 			}

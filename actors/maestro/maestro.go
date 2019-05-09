@@ -37,7 +37,7 @@ import (
 	"go.polydawn.net/go-timeless-api"
 	"go.polydawn.net/go-timeless-api/funcs"
 	"go.polydawn.net/go-timeless-api/repeatr/client/exec"
-	"go.polydawn.net/stellar/gadgets/module"
+	"go.polydawn.net/reach/gadgets/module"
 )
 
 type TaskSubmission struct {

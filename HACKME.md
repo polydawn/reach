@@ -1,4 +1,4 @@
-hacking stellar
+hacking reach
 ===============
 
 code layout

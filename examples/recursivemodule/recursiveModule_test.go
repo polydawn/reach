@@ -5,12 +5,12 @@ import (
 
 	. "github.com/warpfork/go-wish"
 
-	. "go.polydawn.net/stellar/examples/testutil"
+	. "go.polydawn.net/reach/examples/testutil"
 )
 
 func Test(t *testing.T) {
 	WithCwdClonedTmpDir(GetCwdAbs(), func() {
-		exitCode, stdout, stderr := RunIntoBuffer("stellar", "emerge")
+		exitCode, stdout, stderr := RunIntoBuffer("reach", "emerge")
 		Wish(t, exitCode, ShouldEqual, 0)
 		Wish(t, stderr, ShouldEqual, Dedent(`
 			module loaded

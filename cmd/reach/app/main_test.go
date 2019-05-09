@@ -1,24 +1,24 @@
-package stellar_test
+package reach_test
 
 import (
 	"testing"
 
 	. "github.com/warpfork/go-wish"
 
-	. "go.polydawn.net/stellar/examples/testutil"
+	. "go.polydawn.net/reach/examples/testutil"
 )
 
 func TestNoargsHelptext(t *testing.T) {
-	exitCode, stdout, stderr := RunIntoBuffer("stellar")
+	exitCode, stdout, stderr := RunIntoBuffer("reach")
 	Wish(t, exitCode, ShouldEqual, 0)
 	Wish(t, stdout, ShouldEqual, "")
 	Wish(t, stderr, ShouldEqual, Dedent(`
 		NAME:
-		   stellar
+		   reach
 
 		USAGE:
-		   Stellar is a multipurpose tool for driving and managing Timeless Stack projects.
-		   Major functions of `+"`stellar`"+` include:
+		   Reach is a multipurpose tool for driving and managing Timeless Stack projects.
+		   Major functions of `+"`reach`"+` include:
 
 		     - evaluating modules, which run pipelines of repeatr operations;
 		     - staging release candidates of the results;
@@ -40,19 +40,19 @@ func TestNoargsHelptext(t *testing.T) {
 }
 
 func TestWrongCommandHelptext(t *testing.T) {
-	exitCode, stdout, stderr := RunIntoBuffer("stellar", "not a command")
+	exitCode, stdout, stderr := RunIntoBuffer("reach", "not a command")
 	Wish(t, exitCode, ShouldEqual, 1)
 	Wish(t, stdout, ShouldEqual, "")
 	Wish(t, stderr, ShouldEqual, Dedent(`
-		stellar: incorrect usage: 'not a command' is not a stellar subcommand
+		reach: incorrect usage: 'not a command' is not a reach subcommand
 	`))
 
 	t.Run("also when asking for help", func(t *testing.T) {
-		exitCode, stdout, stderr := RunIntoBuffer("stellar", "not a command", "-h")
+		exitCode, stdout, stderr := RunIntoBuffer("reach", "not a command", "-h")
 		Wish(t, exitCode, ShouldEqual, 1)
 		Wish(t, stdout, ShouldEqual, "")
 		Wish(t, stderr, ShouldEqual, Dedent(`
-			stellar: incorrect usage: 'not a command' is not a stellar subcommand
+			reach: incorrect usage: 'not a command' is not a reach subcommand
 		`))
 	})
 }

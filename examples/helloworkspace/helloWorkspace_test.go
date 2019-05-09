@@ -6,7 +6,7 @@ import (
 
 	. "github.com/warpfork/go-wish"
 
-	. "go.polydawn.net/stellar/examples/testutil"
+	. "go.polydawn.net/reach/examples/testutil"
 )
 
 /*
@@ -17,11 +17,11 @@ import (
 
 func TestEmergeOutsideModule(t *testing.T) {
 	WithCwdClonedTmpDir(GetCwdAbs(), func() {
-		exitCode, stdout, stderr := RunIntoBuffer("stellar", "emerge")
+		exitCode, stdout, stderr := RunIntoBuffer("reach", "emerge")
 		Wish(t, exitCode, ShouldEqual, 1)
 		Wish(t, stdout, ShouldEqual, "")
 		Wish(t, stderr, ShouldEqual, Dedent(`
-			stellar: no module found
+			reach: no module found
 		`))
 	})
 }
@@ -29,7 +29,7 @@ func TestEmergeOutsideModule(t *testing.T) {
 func TestEmergeInModule(t *testing.T) {
 	WithCwdClonedTmpDir(GetCwdAbs(), func() {
 		os.Chdir("example.org/proj-foo")
-		exitCode, stdout, stderr := RunIntoBuffer("stellar", "emerge")
+		exitCode, stdout, stderr := RunIntoBuffer("reach", "emerge")
 		Wish(t, exitCode, ShouldEqual, 0)
 		Wish(t, stderr, ShouldEqual, Dedent(`
 			module loaded
@@ -54,7 +54,7 @@ func TestEmergeInModule(t *testing.T) {
 
 			t.Run("another module can consume the candidate", func(t *testing.T) {
 				os.Chdir("../proj-bar")
-				exitCode, stdout, stderr := RunIntoBuffer("stellar", "emerge")
+				exitCode, stdout, stderr := RunIntoBuffer("reach", "emerge")
 				Wish(t, exitCode, ShouldEqual, 0)
 				Wish(t, stderr, ShouldEqual, Dedent(`
 					module loaded
@@ -74,7 +74,7 @@ func TestEmergeInModule(t *testing.T) {
 
 			t.Run("the non-candidate release is still visible", func(t *testing.T) {
 				os.Chdir("../proj-baz")
-				exitCode, stdout, stderr := RunIntoBuffer("stellar", "emerge")
+				exitCode, stdout, stderr := RunIntoBuffer("reach", "emerge")
 				Wish(t, exitCode, ShouldEqual, 0)
 				Wish(t, stderr, ShouldEqual, Dedent(`
 					module loaded
@@ -97,7 +97,7 @@ func TestEmergeInModule(t *testing.T) {
 
 func TestEmergeViaModuleArg(t *testing.T) {
 	WithCwdClonedTmpDir(GetCwdAbs(), func() {
-		exitCode, stdout, stderr := RunIntoBuffer("stellar", "emerge", "example.org/proj-foo")
+		exitCode, stdout, stderr := RunIntoBuffer("reach", "emerge", "example.org/proj-foo")
 		Wish(t, exitCode, ShouldEqual, 0)
 		Wish(t, stderr, ShouldEqual, Dedent(`
 			module loaded
@@ -121,7 +121,7 @@ func TestEmergeViaModuleArg(t *testing.T) {
 			//   and our next functional tests confirm everything quite clearly.
 
 			t.Run("another module can consume the candidate", func(t *testing.T) {
-				exitCode, stdout, stderr := RunIntoBuffer("stellar", "emerge", "example.org/proj-bar")
+				exitCode, stdout, stderr := RunIntoBuffer("reach", "emerge", "example.org/proj-bar")
 				Wish(t, exitCode, ShouldEqual, 0)
 				Wish(t, stderr, ShouldEqual, Dedent(`
 					module loaded
@@ -140,7 +140,7 @@ func TestEmergeViaModuleArg(t *testing.T) {
 			})
 
 			t.Run("the non-candidate release is still visible", func(t *testing.T) {
-				exitCode, stdout, stderr := RunIntoBuffer("stellar", "emerge", "example.org/proj-baz")
+				exitCode, stdout, stderr := RunIntoBuffer("reach", "emerge", "example.org/proj-baz")
 				Wish(t, exitCode, ShouldEqual, 0)
 				Wish(t, stderr, ShouldEqual, Dedent(`
 					module loaded
@@ -164,13 +164,13 @@ func TestEmergeViaModuleArg(t *testing.T) {
 func TestEmergeRecursion(t *testing.T) {
 	t.Run("one recursion (when not enabled) should fail", func(t *testing.T) {
 		WithCwdClonedTmpDir(GetCwdAbs(), func() {
-			exitCode, _, _ := RunIntoBuffer("stellar", "emerge", "example.org/proj-bar")
+			exitCode, _, _ := RunIntoBuffer("reach", "emerge", "example.org/proj-bar")
 			Wish(t, exitCode, ShouldEqual, 1)
 		})
 	})
 	t.Run("one recursion should succeed", func(t *testing.T) {
 		WithCwdClonedTmpDir(GetCwdAbs(), func() {
-			exitCode, _, _ := RunIntoBuffer("stellar", "emerge", "-r", "example.org/proj-bar")
+			exitCode, _, _ := RunIntoBuffer("reach", "emerge", "-r", "example.org/proj-bar")
 			Wish(t, exitCode, ShouldEqual, 0)
 		})
 	})
@@ -179,7 +179,7 @@ func TestEmergeRecursion(t *testing.T) {
 }
 
 func TestLint(t *testing.T) {
-	exitCode, stdout, stderr := RunIntoBuffer("stellar", "catalog", "lint", ".timeless/catalog")
+	exitCode, stdout, stderr := RunIntoBuffer("reach", "catalog", "lint", ".timeless/catalog")
 	Wish(t, exitCode, ShouldEqual, 0)
 	Wish(t, stdout, ShouldEqual, "")
 	Wish(t, stderr, ShouldEqual, Dedent(`

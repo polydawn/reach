@@ -7,7 +7,7 @@ import (
 	"github.com/polydawn/refmt/json"
 
 	"go.polydawn.net/go-timeless-api"
-	"go.polydawn.net/stellar/gadgets/layout"
+	"go.polydawn.net/reach/gadgets/layout"
 )
 
 func Load(landmarks layout.Module) (mod *api.Module, err error) {

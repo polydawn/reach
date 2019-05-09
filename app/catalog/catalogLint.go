@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 
 	"go.polydawn.net/go-timeless-api"
-	"go.polydawn.net/stellar/gadgets/catalog"
+	"go.polydawn.net/reach/gadgets/catalog"
 )
 
 type Linter struct {

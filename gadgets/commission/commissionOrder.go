@@ -7,9 +7,9 @@ import (
 
 	"go.polydawn.net/go-timeless-api"
 	"go.polydawn.net/go-timeless-api/hitch"
-	"go.polydawn.net/stellar/gadgets/catalog"
-	"go.polydawn.net/stellar/gadgets/module"
-	"go.polydawn.net/stellar/gadgets/workspace"
+	"go.polydawn.net/reach/gadgets/catalog"
+	"go.polydawn.net/reach/gadgets/module"
+	"go.polydawn.net/reach/gadgets/workspace"
 )
 
 /*

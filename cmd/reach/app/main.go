@@ -1,4 +1,4 @@
-package stellar
+package reach
 
 import (
 	"context"
@@ -10,20 +10,20 @@ import (
 	"github.com/urfave/cli"
 
 	"go.polydawn.net/go-timeless-api"
-	"go.polydawn.net/stellar/app/catalog"
-	"go.polydawn.net/stellar/app/ci"
-	"go.polydawn.net/stellar/app/emerge"
-	"go.polydawn.net/stellar/gadgets/catalog"
-	"go.polydawn.net/stellar/gadgets/layout"
-	"go.polydawn.net/stellar/gadgets/module"
-	"go.polydawn.net/stellar/gadgets/workspace"
+	"go.polydawn.net/reach/app/catalog"
+	"go.polydawn.net/reach/app/ci"
+	"go.polydawn.net/reach/app/emerge"
+	"go.polydawn.net/reach/gadgets/catalog"
+	"go.polydawn.net/reach/gadgets/layout"
+	"go.polydawn.net/reach/gadgets/module"
+	"go.polydawn.net/reach/gadgets/workspace"
 )
 
 func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io.Writer) (exitCode int) {
 	app := &cli.App{
-		Name: "stellar",
-		UsageText: "Stellar is a multipurpose tool for driving and managing Timeless Stack projects.\n" +
-			"   Major functions of `stellar` include:\n" +
+		Name: "reach",
+		UsageText: "Reach is a multipurpose tool for driving and managing Timeless Stack projects.\n" +
+			"   Major functions of `reach` include:\n" +
 			"\n" +
 			"     - evaluating modules, which run pipelines of repeatr operations;\n" +
 			"     - staging release candidates of the results;\n" +
@@ -81,7 +81,7 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 						case 1:
 							moduleLayout, err = layout.ExpectModule(*workspaceLayout, filepath.Join(cwd, args.Args()[0]))
 						default:
-							return fmt.Errorf("'stellar emerge' takes zero or one args")
+							return fmt.Errorf("'reach emerge' takes zero or one args")
 						}
 						if err != nil {
 							return err
@@ -121,7 +121,7 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 					case 1:
 						moduleLayout, err = layout.ExpectModule(*workspaceLayout, filepath.Join(cwd, args.Args()[0]))
 					default:
-						return fmt.Errorf("'stellar ci' takes zero or one args")
+						return fmt.Errorf("'reach ci' takes zero or one args")
 					}
 					if err != nil {
 						return err
@@ -170,7 +170,7 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 									panic(err)
 								}
 							default:
-								return fmt.Errorf("'stellar catalog lint' takes zero or one args")
+								return fmt.Errorf("'reach catalog lint' takes zero or one args")
 							}
 
 							warnings := 0
@@ -195,12 +195,12 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 		// Must configure this to override an os.Exit(3).
 		CommandNotFound: func(ctx *cli.Context, command string) {
 			exitCode = 1
-			fmt.Fprintf(stderr, "stellar: incorrect usage: '%s' is not a %s subcommand\n", command, ctx.App.Name)
+			fmt.Fprintf(stderr, "reach: incorrect usage: '%s' is not a %s subcommand\n", command, ctx.App.Name)
 		},
 	}
 	if err := app.Run(args); err != nil {
 		exitCode = 1
-		fmt.Fprintf(stderr, "stellar: %s\n", err)
+		fmt.Fprintf(stderr, "reach: %s\n", err)
 	}
 	return
 }

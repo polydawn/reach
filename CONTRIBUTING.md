@@ -1,9 +1,9 @@
 Contribution Guide
 ==================
 
-stellar is an Apache-v2 licensed product.
+reach is an Apache-v2 licensed product.
 
-We welcome and encourage community contributions to stellar.
+We welcome and encourage community contributions to reach.
 
 
 

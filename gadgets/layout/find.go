@@ -11,22 +11,22 @@ import (
 type ErrorCategory string
 
 const (
-	WorkspaceSearchError = ErrorCategory("stellar-workspace-search-error")
-	WorkspaceNotFound    = ErrorCategory("stellar-workspace-not-found")
-	ModuleSearchError    = ErrorCategory("stellar-module-search-error")
-	ModuleNotFound       = ErrorCategory("stellar-module-not-found")
+	WorkspaceSearchError = ErrorCategory("reach-workspace-search-error")
+	WorkspaceNotFound    = ErrorCategory("reach-workspace-not-found")
+	ModuleSearchError    = ErrorCategory("reach-module-search-error")
+	ModuleNotFound       = ErrorCategory("reach-module-not-found")
 )
 
 /*
 	For context: typical usage of these functions varies
 	according to the CLI invocation style:
 
-	- `stellar emerge` --> start search for workspace and module at $PWD.
+	- `reach emerge` --> start search for workspace and module at $PWD.
 
-	- `stellar emerge foo/bar` --> start search for workspace at $PWD;
+	- `reach emerge foo/bar` --> start search for workspace at $PWD;
 	start search for module at '$PWD/foo/bar'.
 	Note how this usage may find a different workspace than if you
-	had run '(cd foo/bar && stellar emerge)'!
+	had run '(cd foo/bar && reach emerge)'!
 
 	Potential future work: we might want to find *all* workspaces between
 	$PWD and '$PWD/foo/bar', so that we can run consistency sanity checks.
@@ -184,4 +184,4 @@ func ExpectModule(lm Workspace, pth string) (*Module, error) {
 }
 
 // Future: `FindModulesBeneath(startPath) ([]Module)` -- we would use this to
-//  handle commands like `stellar emerge ./group/...`.
+//  handle commands like `reach emerge ./group/...`.

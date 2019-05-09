@@ -5,9 +5,9 @@ import (
 	"fmt"
 
 	"go.polydawn.net/go-timeless-api"
-	"go.polydawn.net/stellar/gadgets/ingest/git"
-	"go.polydawn.net/stellar/gadgets/ingest/literal"
-	"go.polydawn.net/stellar/gadgets/ingest/pack"
+	"go.polydawn.net/reach/gadgets/ingest/git"
+	"go.polydawn.net/reach/gadgets/ingest/literal"
+	"go.polydawn.net/reach/gadgets/ingest/pack"
 )
 
 type Config struct {

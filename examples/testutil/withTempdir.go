@@ -11,7 +11,7 @@ import (
 )
 
 func WithTmpdir(fn func(tmpDir fs.AbsolutePath)) {
-	tmpBase := "/tmp/stellar-test/"
+	tmpBase := "/tmp/reach-test/"
 	err := os.MkdirAll(tmpBase, os.FileMode(0777)|os.ModeSticky)
 	if err != nil {
 		panic(err)

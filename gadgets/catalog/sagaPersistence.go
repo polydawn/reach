@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 
 	"go.polydawn.net/go-timeless-api"
-	"go.polydawn.net/stellar/gadgets/layout"
+	"go.polydawn.net/reach/gadgets/layout"
 )
 
 func SaveCandidateRelease(landmarks layout.Workspace, sagaName SagaName, modName api.ModuleName, content map[api.ItemName]api.WareID, stderr io.Writer) error {
@@ -28,7 +28,7 @@ func SaveCandidateRelease(landmarks layout.Workspace, sagaName SagaName, modName
 // Not sure what a good UX is for that.  Only comes up in manual mode.
 // Possible that we should save import resolutions to make this possible
 // to recheck idempotently (we wouldn't want insanity to result from
-// killing the stellar process during that eviction phase!).
+// killing the reach process during that eviction phase!).
 
 func SaveCandidateReplay(landmarks layout.Workspace, sagaName SagaName, modName api.ModuleName, mod api.Module, stderr io.Writer) error {
 	tree := Tree{

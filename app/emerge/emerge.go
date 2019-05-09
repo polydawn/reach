@@ -16,12 +16,12 @@ import (
 	"go.polydawn.net/go-timeless-api"
 	"go.polydawn.net/go-timeless-api/funcs"
 	"go.polydawn.net/go-timeless-api/repeatr/client/exec"
-	"go.polydawn.net/stellar/gadgets/catalog"
-	hitchGadget "go.polydawn.net/stellar/gadgets/catalog/hitch"
-	"go.polydawn.net/stellar/gadgets/ingest"
-	"go.polydawn.net/stellar/gadgets/layout"
-	"go.polydawn.net/stellar/gadgets/module"
-	"go.polydawn.net/stellar/gadgets/workspace"
+	"go.polydawn.net/reach/gadgets/catalog"
+	hitchGadget "go.polydawn.net/reach/gadgets/catalog/hitch"
+	"go.polydawn.net/reach/gadgets/ingest"
+	"go.polydawn.net/reach/gadgets/layout"
+	"go.polydawn.net/reach/gadgets/module"
+	"go.polydawn.net/reach/gadgets/workspace"
 )
 
 func EvalModule(
@@ -82,7 +82,7 @@ func EvalModule(
 	pins, pinWs, err := funcs.ResolvePins(mod, viewCatalogTool, viewWarehousesTool, resolveTool)
 	if err != nil {
 		return errcat.Errorf(
-			"stellar-resolve-imports-failed",
+			"reach-resolve-imports-failed",
 			"cannot resolve imports: %s", err)
 	}
 	wareSourcing.Append(*pinWs)

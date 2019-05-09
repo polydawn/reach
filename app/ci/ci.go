@@ -7,10 +7,10 @@ import (
 	"time"
 
 	"go.polydawn.net/go-timeless-api"
-	"go.polydawn.net/stellar/app/emerge"
-	"go.polydawn.net/stellar/gadgets/ingest/git"
-	"go.polydawn.net/stellar/gadgets/layout"
-	"go.polydawn.net/stellar/gadgets/workspace"
+	"go.polydawn.net/reach/app/emerge"
+	"go.polydawn.net/reach/gadgets/ingest/git"
+	"go.polydawn.net/reach/gadgets/layout"
+	"go.polydawn.net/reach/gadgets/workspace"
 )
 
 func Loop(

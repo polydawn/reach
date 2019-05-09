@@ -7,7 +7,7 @@ import (
 
 	"go.polydawn.net/go-timeless-api"
 	"go.polydawn.net/go-timeless-api/hitch"
-	"go.polydawn.net/stellar/gadgets/catalog"
+	"go.polydawn.net/reach/gadgets/catalog"
 )
 
 func WithCandidates(viewTool hitch.ViewCatalogTool, candidatesTree catalog.Tree) hitch.ViewCatalogTool {
