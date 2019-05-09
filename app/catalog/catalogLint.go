@@ -42,7 +42,7 @@ func (cfg Linter) Lint() error {
 			basename := filepath.Base(path)
 			moduleName := api.ModuleName(modulePath[:len(modulePath)-len(basename)-1])
 			switch basename {
-			case "mirrors.tl":
+			case catalog.MirrorsFileName:
 				// Check parse.
 				ws, err := cfg.Tree.LoadModuleMirrors(moduleName)
 				if err != nil {
@@ -55,7 +55,7 @@ func (cfg Linter) Lint() error {
 
 				// Check semantic sanity.
 				//  Uses a foolish probably-duplicate load of catalog.
-				cat, err := cfg.Tree.LoadModuleCatalog(moduleName)
+				lin, err := cfg.Tree.LoadModuleLineage(moduleName)
 				if err != nil {
 					return nil // skip the rest of this check and wait for that error to be rediscovered later.
 				}
@@ -85,7 +85,7 @@ func (cfg Linter) Lint() error {
 					}
 				}
 				allCatalogWares := map[api.WareID]struct{}{}
-				for _, rel := range cat.Releases {
+				for _, rel := range lin.Releases {
 					for _, wareID := range rel.Items {
 						allCatalogWares[wareID] = struct{}{}
 					}
@@ -107,9 +107,9 @@ func (cfg Linter) Lint() error {
 				if cfg.Rewrite {
 					cfg.Tree.SaveModuleMirrors(moduleName, *ws)
 				}
-			case "catalog.tl":
+			case catalog.LineageFileName:
 				// Check parse.
-				cat, err := cfg.Tree.LoadModuleCatalog(moduleName)
+				lin, err := cfg.Tree.LoadModuleLineage(moduleName)
 				if err != nil {
 					cfg.WarnBehavior(fmt.Sprintf("%v", err), func() {})
 					return nil
@@ -117,23 +117,23 @@ func (cfg Linter) Lint() error {
 
 				// Check semantic sanity.
 				// Check that the file's concept of who it is matches the path.
-				if cat.Name != moduleName {
+				if lin.Name != moduleName {
 					cfg.WarnBehavior(
-						fmt.Sprintf("in catalog for %q, moduleName does not match path!", moduleName),
+						fmt.Sprintf("in lineage for module %q, moduleName does not match path!", moduleName),
 						func() {
-							cat.Name = moduleName
+							lin.Name = moduleName
 						},
 					)
 				}
-				// Check that all release names are valid, and no duplicate entries.
+				// Check that all release names are valid, and no dupliline entries.
 				takenNames := map[api.ReleaseName]struct{}{}
-				for _, rel := range cat.Releases {
+				for _, rel := range lin.Releases {
 					// TODO validation rule for release names missing
 					if _, present := takenNames[rel.Name]; present {
 						cfg.WarnBehavior(
-							fmt.Sprintf("in catalog for %q, multiple releases found named %q!", moduleName, rel.Name),
+							fmt.Sprintf("in lineage for module %q, multiple releases found named %q!", moduleName, rel.Name),
 							func() {
-								cat.Name = moduleName
+								lin.Name = moduleName
 							},
 						)
 					}
@@ -142,7 +142,7 @@ func (cfg Linter) Lint() error {
 
 				// Rewrite, ensuring bytewise normality.
 				if cfg.Rewrite {
-					cfg.Tree.SaveModuleCatalog(moduleName, *cat)
+					cfg.Tree.SaveModuleLineage(moduleName, *lin)
 				}
 			default:
 				// TODO warn about any files of names we don't know about
@@ -162,7 +162,7 @@ func (cfg Linter) Lint() error {
 			return nil
 		}
 	})
-	// TODO some categorization of any walk errors.
+	// TODO some linegorization of any walk errors.
 	return err
 }
 

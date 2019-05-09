@@ -10,30 +10,30 @@ import (
 	"go.polydawn.net/reach/gadgets/catalog"
 )
 
-func WithCandidates(viewTool hitch.ViewCatalogTool, candidatesTree catalog.Tree) hitch.ViewCatalogTool {
-	return candidateDecorator{viewTool, candidatesTree}.ViewCatalog
+func WithCandidates(viewTool hitch.ViewLineageTool, candidatesTree catalog.Tree) hitch.ViewLineageTool {
+	return candidateDecorator{viewTool, candidatesTree}.ViewLineage
 }
 
 type candidateDecorator struct {
-	ViewCatalogDelegate hitch.ViewCatalogTool
+	ViewLineageDelegate hitch.ViewLineageTool
 	CandidateTree       catalog.Tree // Releases here are prepended to others.
 }
 
-func (cat candidateDecorator) ViewCatalog(
+func (cat candidateDecorator) ViewLineage(
 	ctx context.Context,
 	modName api.ModuleName,
-) (*api.ModuleCatalog, error) {
+) (*api.Lineage, error) {
 	// Load main catalog first.
-	modCat, err := cat.ViewCatalogDelegate(ctx, modName)
+	lin, err := cat.ViewLineageDelegate(ctx, modName)
 	switch errcat.Category(err) {
 	case nil:
 		// continue!
-	case hitch.ErrNoSuchCatalog:
-		candidateModCat, err2 := cat.CandidateTree.LoadModuleCatalog(modName)
+	case hitch.ErrNoSuchLineage:
+		candidateLin, err2 := cat.CandidateTree.LoadModuleLineage(modName)
 		switch errcat.Category(err2) {
 		case nil:
-			return candidateModCat, nil
-		case hitch.ErrNoSuchCatalog:
+			return candidateLin, nil
+		case hitch.ErrNoSuchLineage:
 			return nil, err // better to return the "not found" from the delegate.
 		default:
 			return nil, err2
@@ -42,22 +42,22 @@ func (cat candidateDecorator) ViewCatalog(
 		return nil, err
 	}
 	// Load any candidate info and if it exists merge it in.
-	candidateModCat, err := cat.CandidateTree.LoadModuleCatalog(modName)
+	candidateLin, err := cat.CandidateTree.LoadModuleLineage(modName)
 	switch errcat.Category(err) {
 	case nil:
 		// continue!
-	case hitch.ErrNoSuchCatalog:
-		return modCat, nil
+	case hitch.ErrNoSuchLineage:
+		return lin, nil
 	default:
 		return nil, err
 	}
-	rel, err := hitch.CatalogPluckReleaseByName(*candidateModCat, "candidate")
+	rel, err := hitch.LineagePluckReleaseByName(*candidateLin, "candidate")
 	if err != nil {
-		panic("a catalog in the candidate tree must only contain a release called \"candidate\"")
+		panic("a lineage in the candidate tree may only contain a release called \"candidate\"")
 	}
-	modCat, err = hitch.CatalogPrependRelease(*modCat, *rel)
+	lin, err = hitch.LineagePrependRelease(*lin, *rel)
 	if err != nil {
-		panic("main track release catalogs shouldn't already contain a \"candidate\"!")
+		panic("a lineage in a catalog shouldn't already contain a \"candidate\"!!")
 	}
-	return modCat, nil
+	return lin, nil
 }
