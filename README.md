@@ -15,7 +15,7 @@ By Example
 
 ### hellomodule
 
-- You can see a reach module here:
+- You can see a Reach module here:
   [./examples/hellomodule/module.tl](./examples/hellomodule/module.tl).
 - The imports which are `"catalog:x:y:z"` references are resolved into WareID hashes
   by looking at files in
@@ -58,7 +58,7 @@ However, they can also get quite verbose for large projects.
 It is explicitly intended to be reasonable to generate module json with a higher level language.
 (In other words, Reach is "Layer 2" in the Timeless Stack model, and you should feel free to implement your own business logic constructs in "Layer 3" that generate module json.)
 
-Reach only performs *non-turing complete* operations (excluding what occurs inside containers, of course) -- that is, the reach modules express a dependency DAG, but
+Reach only performs *non-turing complete* operations (excluding what occurs inside containers, of course) -- that is, the Reach modules express a dependency DAG, but
 there is not (and will not be) support for modules which generate more steps, etc.
 Build this kind of feature at Layer 3.
 
