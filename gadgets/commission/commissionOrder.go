@@ -92,12 +92,12 @@ func orderModules_visit(
 				//   so strictly speaking we certainly don't *need* to here,
 				//   but it's cheap enough to check now as well as later.
 				catTree := catalog.Tree{ws.Layout.CatalogRoot()}
-				modCat, err := catTree.LoadModuleCatalog(imp2.ModuleName)
+				modCat, err := catTree.LoadModuleLineage(imp2.ModuleName)
 				if err != nil {
 					return fmt.Errorf("unable to resolve import %q (wanted by module %q): %s",
 						imp, node, err)
 				}
-				if _, err := hitch.CatalogPluckReleaseItem(*modCat, imp2.ReleaseName, imp2.ItemName); err != nil {
+				if _, err := hitch.LineagePluckReleaseItem(*modCat, imp2.ReleaseName, imp2.ItemName); err != nil {
 					return fmt.Errorf("unable to resolve import %q (wanted by module %q): %s",
 						imp, node, err)
 				}

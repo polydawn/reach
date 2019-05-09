@@ -12,7 +12,7 @@ func SaveCandidateRelease(landmarks layout.Workspace, sagaName SagaName, modName
 	tree := Tree{
 		filepath.Join(landmarks.WorkspaceRoot(), ".timeless/candidates/", sagaName.String()),
 	}
-	return tree.SaveModuleCatalog(modName, api.ModuleCatalog{
+	return tree.SaveModuleLineage(modName, api.Lineage{
 		Name: modName,
 		Releases: []api.Release{
 			{

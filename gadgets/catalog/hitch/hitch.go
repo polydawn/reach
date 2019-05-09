@@ -15,27 +15,27 @@ import (
 // FUTURE: a caching wrapper.
 
 func ViewTools(trees ...catalog.Tree) (
-	hitch.ViewCatalogTool,
+	hitch.ViewLineageTool,
 	hitch.ViewWarehousesTool,
 ) {
 	cat := basicCatalog{trees}
-	return cat.ViewCatalog, cat.ViewWarehouses
+	return cat.ViewLineage, cat.ViewWarehouses
 }
 
 type basicCatalog struct {
 	Trees []catalog.Tree // Reads probe linearly down.
 }
 
-func (cat basicCatalog) ViewCatalog(
+func (cat basicCatalog) ViewLineage(
 	ctx context.Context,
 	modName api.ModuleName,
-) (modCat *api.ModuleCatalog, err error) {
+) (modCat *api.Lineage, err error) {
 	for _, tree := range cat.Trees {
-		modCat, err = tree.LoadModuleCatalog(modName)
+		modCat, err = tree.LoadModuleLineage(modName)
 		switch errcat.Category(err) {
 		case nil:
 			return modCat, nil
-		case hitch.ErrNoSuchCatalog:
+		case hitch.ErrNoSuchLineage:
 			continue
 		default:
 			return nil, err
@@ -56,7 +56,7 @@ func (cat basicCatalog) ViewWarehouses(
 				return &api.WareSourcing{}, nil
 			}
 			return ws, nil
-		case hitch.ErrNoSuchCatalog:
+		case hitch.ErrNoSuchLineage:
 			continue
 		default:
 			return nil, err

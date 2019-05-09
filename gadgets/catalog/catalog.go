@@ -17,20 +17,26 @@ type Tree struct {
 	Root string
 }
 
-// LoadModuleMirrors attempts to load the catalog.tl file for a module.
-// The result can never be nil unless there is an error since the catalog file is required.
-func (tree Tree) LoadModuleCatalog(modName api.ModuleName) (modCat *api.ModuleCatalog, err error) {
-	err = tree.loadModuleFile(modName, &modCat, api.Atlas_Catalog, true, "catalog", "catalog.tl")
+const (
+	LineageFileName = "lineage.tl"
+	MirrorsFileName = "mirrors.tl"
+)
+
+// LoadModuleLineage attempts to load the lineage file for a module from the catalog.
+// The result can never be nil unless there is an error since the lineage file
+// is the one file that's required for the rest of the catalog folder to be recognizable.
+func (tree Tree) LoadModuleLineage(modName api.ModuleName) (lin *api.Lineage, err error) {
+	err = tree.loadModuleFile(modName, &lin, api.Atlas_Catalog, true, "lineage", LineageFileName)
 	return
 }
 
-// SaveModuleMirrors writes out a catalog.tl file.
+// SaveModuleLineage writes out a linage file for a module to the catalog.
 // The dirs will be created if necessary.
-func (tree Tree) SaveModuleCatalog(modName api.ModuleName, modCat api.ModuleCatalog) error {
+func (tree Tree) SaveModuleLineage(modName api.ModuleName, lin api.Lineage) error {
 	if err := modName.Validate(); err != nil {
 		return errcat.ErrorDetailed(
 			hitch.ErrUsage,
-			fmt.Sprintf("cannot save catalog: %q is not a valid module name: %s", modName, err),
+			fmt.Sprintf("cannot save lineage: %q is not a valid module name: %s", modName, err),
 			map[string]string{
 				"ref": string(modName),
 			})
@@ -38,25 +44,25 @@ func (tree Tree) SaveModuleCatalog(modName api.ModuleName, modCat api.ModuleCata
 	if err := os.MkdirAll(filepath.Join(tree.Root, string(modName)), 0755); err != nil {
 		return errcat.ErrorDetailed(
 			hitch.ErrCorruptState,
-			fmt.Sprintf("cannot save catalog for module %q: %s", modName, err),
+			fmt.Sprintf("cannot save lineage for module %q: %s", modName, err),
 			map[string]string{
 				"ref": string(modName),
 			})
 	}
-	return tree.saveModuleFile(modName, modCat, api.Atlas_Catalog, "catalog", "catalog.tl")
+	return tree.saveModuleFile(modName, lin, api.Atlas_Catalog, "lineage", LineageFileName)
 }
 
-// LoadModuleMirrors attempts to load the mirrors.tl file for a module.
+// LoadModuleMirrors attempts to load the mirrors list file for a module from the catalog.
 // The result is nil and nil error iff the file does not exist.
 func (tree Tree) LoadModuleMirrors(modName api.ModuleName) (ws *api.WareSourcing, err error) {
-	err = tree.loadModuleFile(modName, &ws, api.Atlas_WareSourcing, false, "mirrors list", "mirrors.tl")
+	err = tree.loadModuleFile(modName, &ws, api.Atlas_WareSourcing, false, "mirrors list", MirrorsFileName)
 	return
 }
 
-// SaveModuleMirrors writes out a mirrors.tl file.
-// The catalog must be written first (e.g. the dir must exist).
+// SaveModuleMirrors writes out a mirrors list file for a module to the catalog.
+// The lineage must be written first (e.g. the dir must exist).
 func (tree Tree) SaveModuleMirrors(modName api.ModuleName, ws api.WareSourcing) error {
-	return tree.saveModuleFile(modName, ws, api.Atlas_WareSourcing, "mirrors list", "mirrors.tl")
+	return tree.saveModuleFile(modName, ws, api.Atlas_WareSourcing, "mirrors list", MirrorsFileName)
 }
 
 //
@@ -133,8 +139,8 @@ func (tree Tree) expectModule(modName api.ModuleName) error {
 	modPath := filepath.Join(tree.Root, string(modName))
 	if fi, err := os.Stat(modPath); err != nil || !fi.IsDir() {
 		return errcat.ErrorDetailed(
-			hitch.ErrNoSuchCatalog,
-			fmt.Sprintf("module %q not found: %q is not a dir", modName, modPath),
+			hitch.ErrNoSuchLineage,
+			fmt.Sprintf("lineage %q not found: %q is not a dir", modName, modPath),
 			map[string]string{
 				"ref": string(modName),
 			})
@@ -153,7 +159,7 @@ func (tree Tree) saveModuleFile(modName api.ModuleName, structure interface{}, a
 	if err != nil {
 		return errcat.ErrorDetailed(
 			hitch.ErrCorruptState,
-			fmt.Sprintf("module %s failed to save for %q: %s", purpose, modName, err),
+			fmt.Sprintf("failed to save %s for module %q: %s", purpose, modName, err),
 			map[string]string{
 				"ref": string(modName),
 			})
@@ -163,7 +169,7 @@ func (tree Tree) saveModuleFile(modName api.ModuleName, structure interface{}, a
 	if err != nil {
 		return errcat.ErrorDetailed(
 			hitch.ErrCorruptState, // This is actually kind of catastrophic and hopefully isn't reachable.
-			fmt.Sprintf("module %s failed to save for %q: %s", purpose, modName, err),
+			fmt.Sprintf("failed to save %s for module %q: %s", purpose, modName, err),
 			map[string]string{
 				"ref": string(modName),
 			})
