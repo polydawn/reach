@@ -9,6 +9,7 @@ import (
 	"go.polydawn.net/go-timeless-api/funcs"
 	"go.polydawn.net/go-timeless-api/repeatr"
 	"go.polydawn.net/go-timeless-api/repeatr/fmt"
+	"go.polydawn.net/reach/lib/iofilter"
 )
 
 // FUTURE: would be nice to have each step eval return futures, and then
@@ -70,7 +71,10 @@ func evaluate(
 		fmt.Fprintf(os.Stderr, "beginning evaluation of step %v: %v\n", ctxPth, submStepRef)
 		switch step := mod.Steps[submStepRef.StepName].(type) {
 		case api.Operation:
-			mon, monWaitCh := repeatrfmt.ServeMonitor(repeatrfmt.NewAnsiPrinter(os.Stderr, os.Stderr))
+			rawWriter := os.Stderr // FIXME is code smell to grab os.Stderr this deep down (though currently harmless)
+			fmt.Fprintf(rawWriter, "  \033[1;33m┌── %s ─────────────\033[0m\n", submStepRef)
+			printer := iofilter.LinePrefixingWriter(rawWriter, []byte("  \033[1;33m│\033[0m "))
+			mon, monWaitCh := repeatrfmt.ServeMonitor(repeatrfmt.NewAnsiPrinter(printer, printer))
 			record, err := repeatr.RunOperation(
 				ctx,
 				runTool,
@@ -83,6 +87,7 @@ func evaluate(
 			)
 			close(mon.Chan)
 			<-monWaitCh
+			fmt.Fprintf(rawWriter, "  \033[1;33m└───────────────\033[0m\n")
 			if err != nil {
 				return nil, fmt.Errorf("failed evaluating operation %q: %s", submStepRef.Contextualize(ctxPth), err)
 			}
