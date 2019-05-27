@@ -5,10 +5,14 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/polydawn/refmt"
+	"github.com/polydawn/refmt/json"
+
 	"go.polydawn.net/go-timeless-api"
 	"go.polydawn.net/go-timeless-api/funcs"
 	"go.polydawn.net/go-timeless-api/repeatr"
 	"go.polydawn.net/go-timeless-api/repeatr/fmt"
+	"go.polydawn.net/reach/gadgets/operation"
 	"go.polydawn.net/reach/lib/iofilter"
 )
 
@@ -71,17 +75,34 @@ func evaluate(
 		fmt.Fprintf(os.Stderr, "beginning evaluation of step %v: %v\n", ctxPth, submStepRef)
 		switch step := mod.Steps[submStepRef.StepName].(type) {
 		case api.Operation:
+			// Prepare highlighting box.
 			rawWriter := os.Stderr // FIXME is code smell to grab os.Stderr this deep down (though currently harmless)
-			fmt.Fprintf(rawWriter, "  \033[1;33m┌── %s ─────────────\033[0m\n", submStepRef)
+			fmt.Fprintf(rawWriter, "  \033[1;33m┌── step %s: resolving... ───────────────\033[0m\n", submStepRef)
 			printer := iofilter.LinePrefixingWriter(rawWriter, []byte("  \033[1;33m│\033[0m "))
-			mon, monWaitCh := repeatrfmt.ServeMonitor(repeatrfmt.NewAnsiPrinter(printer, printer))
-			record, err := repeatr.RunOperation(
-				ctx,
-				runTool,
+			// Resolve names into a PreparedOperation.
+			prop, err := operation.Resolve(
 				step,
 				scope,
 				wareSourcing,
 				wareStaging,
+			)
+			if err != nil {
+				fmt.Fprintf(rawWriter, "  \033[1;33m└───────────────\033[0m\n")
+				return nil, fmt.Errorf("failed resolving operation %q: %s", submStepRef.Contextualize(ctxPth), err)
+			}
+			// Print the resolved Formula -- useful for demo and debugging.
+			//  (But use a fork of the formula with a zero'd out action, because there's no need to reprint that!)
+			fmt.Fprintf(printer, "// resolved formula:\n")
+			logFrm := prop.Formula.Clone()
+			logFrm.Action = api.FormulaAction{Exec: []string{"..."}}
+			refmt.NewMarshallerAtlased(json.EncodeOptions{Line: []byte{'\n'}, Indent: []byte("    ")}, printer, api.Atlas_Formula).Marshal(logFrm)
+			fmt.Fprintf(rawWriter, "  \033[1;33m├── step %s: repeatr'ing... ────────\033[0m\n", submStepRef)
+			// Eval!
+			mon, monWaitCh := repeatrfmt.ServeMonitor(repeatrfmt.NewAnsiPrinter(printer, printer))
+			record, err := operation.Eval(
+				ctx,
+				runTool,
+				*prop,
 				repeatr.InputControl{}, // input control is always zero for build jobs.
 				mon,
 			)
@@ -91,6 +112,7 @@ func evaluate(
 			if err != nil {
 				return nil, fmt.Errorf("failed evaluating operation %q: %s", submStepRef.Contextualize(ctxPth), err)
 			}
+			// Modify the names in scope to include the new outputs!
 			for slotName := range step.Outputs {
 				scope[api.SlotRef{submStepRef.StepName, slotName}] = record.Results[slotName]
 			}
