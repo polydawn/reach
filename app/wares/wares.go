@@ -16,16 +16,11 @@ import (
 	rioclient "go.polydawn.net/go-timeless-api/rio/client/exec"
 	"go.polydawn.net/reach/gadgets/catalog"
 	hitchGadget "go.polydawn.net/reach/gadgets/catalog/hitch"
-	"go.polydawn.net/reach/gadgets/layout"
 	"go.polydawn.net/reach/gadgets/workspace"
 )
 
-func ListCandidates(ws workspace.Workspace, layoutModule layout.Module, sagaName catalog.SagaName, itemName *api.ItemName, stdout, stderr io.Writer) error {
+func ListCandidates(ws workspace.Workspace, moduleName api.ModuleName, sagaName catalog.SagaName, itemName *api.ItemName, stdout, stderr io.Writer) error {
 	tree := catalog.Tree{filepath.Join(ws.Layout.WorkspaceRoot(), ".timeless/candidates/", sagaName.String())}
-	moduleName, err := ws.ResolveModuleName(layoutModule)
-	if err != nil {
-		return err
-	}
 	lineage, err := tree.LoadModuleLineage(moduleName)
 	if err != nil {
 		return err
@@ -109,16 +104,81 @@ func ListReleases(ws workspace.Workspace, moduleName api.ModuleName, releaseName
 
 	return nil
 }
+func UnpackCandidate(ctx context.Context, ws workspace.Workspace, sagaName catalog.SagaName, moduleName api.ModuleName, itemName api.ItemName, path string, stdout, stderr io.Writer) error {
+	tree := catalog.Tree{filepath.Join(ws.Layout.WorkspaceRoot(), ".timeless/candidates/", sagaName.String())}
+	lineage, err := tree.LoadModuleLineage(moduleName)
+	if err != nil {
+		return err
+	}
+	wareID, err := hitch.LineagePluckReleaseItem(*lineage, "candidate", itemName)
+	if err != nil {
+		return err
+	}
 
-func UnpackWareContents(context context.Context, ws workspace.Workspace, wareId api.WareID, path string, stdout, stderr io.Writer) error {
-	unpackedId, err := rioclient.UnpackFunc(context,
+	wareSourcing := api.WareSourcing{}
+	wareSourcing.AppendByPackType("tar", ws.Layout.StagingWarehouseLoc())
+	_, viewWarehouseTool := hitchGadget.ViewTools([]catalog.Tree{
+		// refactor note: we used to stack several catalog dirs here, but have backtracked from allowing that.
+		// so it's possible there's a layer of abstraction here that should be removed outright; have not fully reviewed.
+		{ws.Layout.CatalogRoot()},
+		{filepath.Join(ws.Layout.WorkspaceRoot(), ".timeless/candidates/", sagaName.String())},
+	}...)
+	// viewWarehouseTool = hitchGadget.WithCandidates(
+	// 	viewWarehouseTool,
+	// 	catalog.Tree{filepath.Join(ws.Layout.WorkspaceRoot(), ".timeless/candidates/", sagaName.String())},
+	// )
+	warehouse, err := viewWarehouseTool(ctx, moduleName)
+	wareSourcing.Append(*warehouse)
+	wareSourcing = wareSourcing.PivotToModuleWare(*wareID, moduleName)
+	warehouseLocations := []api.WarehouseLocation{
+		ws.Layout.StagingWarehouseLoc(),
+	}
+	return UnpackWareContents(ctx, ws, warehouseLocations, *wareID, path, stdout, stderr)
+}
+
+func UnpackRelease(ctx context.Context, ws workspace.Workspace, moduleName api.ModuleName, releaseName api.ReleaseName, itemName api.ItemName, path string, stdout, stderr io.Writer) error {
+	viewLineageTool, _ := hitchGadget.ViewTools([]catalog.Tree{
+		// refactor note: we used to stack several catalog dirs here, but have backtracked from allowing that.
+		// so it's possible there's a layer of abstraction here that should be removed outright; have not fully reviewed.
+		{ws.Layout.CatalogRoot()},
+	}...)
+
+	lineage, err := viewLineageTool(ctx, moduleName)
+	if err != nil {
+		return err
+	}
+	wareID, err := hitch.LineagePluckReleaseItem(*lineage, releaseName, itemName)
+	if err != nil {
+		return err
+	}
+	wareSourcing := api.WareSourcing{}
+	wareSourcing.AppendByPackType("tar", ws.Layout.StagingWarehouseLoc())
+	_, viewWarehouseTool := hitchGadget.ViewTools([]catalog.Tree{
+		// refactor note: we used to stack several catalog dirs here, but have backtracked from allowing that.
+		// so it's possible there's a layer of abstraction here that should be removed outright; have not fully reviewed.
+		{ws.Layout.CatalogRoot()},
+	}...)
+	warehouse, err := viewWarehouseTool(ctx, moduleName)
+	wareSourcing.Append(*warehouse)
+	wareSourcing = wareSourcing.PivotToModuleWare(*wareID, moduleName)
+
+	return UnpackWareContents(ctx, ws, wareSourcing.ByWare[*wareID], *wareID, path, stdout, stderr)
+}
+
+func UnpackWareID(ctx context.Context, ws workspace.Workspace, wareId api.WareID, path string, stdout, stderr io.Writer) error {
+	wareSourcing := api.WareSourcing{}
+	wareSourcing.AppendByPackType("tar", ws.Layout.StagingWarehouseLoc())
+	wareSourcing = wareSourcing.PivotToModuleWare(wareId, "")
+	return UnpackWareContents(ctx, ws, wareSourcing.ByWare[wareId], wareId, path, stdout, stderr)
+}
+
+func UnpackWareContents(ctx context.Context, ws workspace.Workspace, wareLocations []api.WarehouseLocation, wareId api.WareID, path string, stdout, stderr io.Writer) error {
+	unpackedId, err := rioclient.UnpackFunc(ctx,
 		wareId,
 		path,
 		api.FilesetUnpackFilter_LowPriv,
 		rio.Placement_Direct,
-		[]api.WarehouseLocation{
-			ws.Layout.StagingWarehouseLoc(),
-		},
+		wareLocations,
 		rio.Monitor{},
 	)
 	if err != nil {

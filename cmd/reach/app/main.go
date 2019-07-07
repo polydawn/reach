@@ -209,7 +209,7 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 							{
 								Name:      "candidates",
 								Usage:     "List release candidates",
-								ArgsUsage: "[<item-name>]",
+								ArgsUsage: "[<moduleNameOrPath> [<item-name>]]",
 								Action: func(args *cli.Context) error {
 									cwd, err := os.Getwd()
 									if err != nil {
@@ -225,29 +225,36 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 										return err
 									}
 
-									workspace := workspace.Workspace{*workspaceLayout}
-									moduleLayout, err := layout.FindModule(*workspaceLayout, cwd)
-									if err != nil {
-										return err
-									}
+									ws := workspace.Workspace{*workspaceLayout}
 
 									var itemName *api.ItemName
+									var modNameOrPath string
+									var modName *api.ModuleName
 									switch args.NArg() {
-									case 0:
-										itemName = nil
-									case 1:
-										tmp := api.ItemName(args.Args()[0])
+									case 2:
+										tmp := api.ItemName(args.Args()[1])
 										itemName = &tmp
+										fallthrough
+
+									case 1:
+										modNameOrPath = args.Args()[0]
+										fallthrough
+									case 0:
+										modName, err = ModuleNameOrPath(ws, modNameOrPath, cwd)
+										if err != nil {
+											return err
+										}
 									default:
 										return fmt.Errorf("select takes 0 or 1 item name")
 									}
-									return waresApp.ListCandidates(workspace, *moduleLayout, *sn, itemName, stdout, stderr)
+
+									return waresApp.ListCandidates(ws, *modName, *sn, itemName, stdout, stderr)
 								},
 							},
 							{
 								Name:      "releases",
 								Usage:     "List releases",
-								ArgsUsage: "[<moduleName> [<releaseName> [<itemName>]]]",
+								ArgsUsage: "[<moduleNameOrPath> [<releaseName> [<itemName>]]]",
 								Action: func(args *cli.Context) error {
 									cwd, err := os.Getwd()
 									if err != nil {
@@ -337,7 +344,75 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 									if err != nil {
 										return err
 									}
-									return waresApp.UnpackWareContents(ctx, workspace, wareId, unpackPath, stdout, stderr)
+									return waresApp.UnpackWareID(ctx, workspace, wareId, unpackPath, stdout, stderr)
+								},
+							},
+							{
+								Name:      "candidate",
+								Usage:     "Unpack a release candidate",
+								ArgsUsage: "<moduleNameOrPath> <itemName> [<outputPath>]",
+								Action: func(args *cli.Context) error {
+									unpackDir := "tmp.unpack"
+									cwd, err := os.Getwd()
+									if err != nil {
+										return err
+									}
+
+									// Find workspace.
+									workspaceLayout, err := layout.FindWorkspace(cwd)
+									if err != nil {
+										return err
+									}
+									sn, _ := catalog.ParseSagaName("default") // TODO more complicated defaults and flags
+									ws := workspace.Workspace{*workspaceLayout}
+									switch args.NArg() {
+									case 3:
+										unpackDir = args.Args()[2]
+										fallthrough
+									case 2:
+										modName, err := ModuleNameOrPath(ws, args.Args()[0], cwd)
+										if err != nil {
+											return err
+										}
+										itemName := api.ItemName(args.Args()[1])
+										return waresApp.UnpackCandidate(ctx, ws, *sn, *modName, itemName, unpackDir, stdout, stderr)
+									default:
+										return fmt.Errorf("'unpack candidate' takes either 2 or 3 arguments.  See -h for details.")
+									}
+								},
+							},
+							{
+								Name:      "release",
+								Usage:     "Unpack a release ",
+								ArgsUsage: "<moduleNameOrPath> <releaseName> <itemName> [<outputPath>]",
+								Action: func(args *cli.Context) error {
+									unpackDir := "tmp.unpack"
+									cwd, err := os.Getwd()
+									if err != nil {
+										return err
+									}
+
+									// Find workspace.
+									workspaceLayout, err := layout.FindWorkspace(cwd)
+									if err != nil {
+										return err
+									}
+									ws := workspace.Workspace{*workspaceLayout}
+									switch args.NArg() {
+									case 4:
+										unpackDir = args.Args()[3]
+										fallthrough
+									case 3:
+										modName, err := ModuleNameOrPath(ws, args.Args()[0], cwd)
+										if err != nil {
+											return err
+										}
+										releaseName := api.ReleaseName(args.Args()[1])
+										itemName := api.ItemName(args.Args()[2])
+										return waresApp.UnpackRelease(ctx, ws, *modName, releaseName, itemName, unpackDir, stdout, stderr)
+									default:
+										return fmt.Errorf("'unpack release' takes either 3 or 4 arguments.  See -h for details.")
+									}
 								},
 							},
 						},
