@@ -41,6 +41,9 @@ const (
 // The path can be relative or absolute; results will be in the same format
 // (but always clean'd).  If the given path is relative, the search will not
 // recurse above it.
+//
+// Note that no workspace configuration is loaded or parsed to determine
+// any of these paths.
 func FindWorkspace(startPath string) (*Workspace, error) {
 	startClean := filepath.Clean(startPath)
 	for dir := startClean; ; dir = filepath.Dir(dir) {
