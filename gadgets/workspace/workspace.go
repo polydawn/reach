@@ -21,6 +21,8 @@ import (
 	- `workspace.Workspace` --> (this here) loads and understands config.
 */
 
+const anonymousModuleName api.ModuleName = api.ModuleName("unnamed")
+
 type Workspace struct {
 	Layout layout.Workspace
 
@@ -44,7 +46,7 @@ type Workspace struct {
 //
 // The moduleLayout argument must be for a path inside the workspace;
 // otherwise a panic will be raised.
-func (ws Workspace) ResolveModuleName(moduleLayout layout.Module) (*api.ModuleName, error) {
+func (ws Workspace) ResolveModuleName(moduleLayout layout.Module) (api.ModuleName, error) {
 	wsRoot := ws.Layout.WorkspaceRoot()
 	modRoot := moduleLayout.ModuleRoot()
 
@@ -55,7 +57,7 @@ func (ws Workspace) ResolveModuleName(moduleLayout layout.Module) (*api.ModuleNa
 
 	// If the module is in the workspace root, it's definitely anon.
 	if len(modRoot) == len(wsRoot) {
-		return nil, nil
+		return anonymousModuleName, nil
 	}
 
 	// Future: check for config that remaps paths<->names.
@@ -65,14 +67,14 @@ func (ws Workspace) ResolveModuleName(moduleLayout layout.Module) (*api.ModuleNa
 
 	// Sanity check name.
 	if err := modName.Validate(); err != nil {
-		return nil, errcat.ErrorDetailed(
+		return "", errcat.ErrorDetailed(
 			hitch.ErrUsage,
 			fmt.Sprintf("%q is not a valid module name: %s", modName, err),
 			map[string]string{
 				"ref": string(modName),
 			})
 	}
-	return &modName, nil
+	return modName, nil
 }
 
 // GetModuleLayout returns a layout.Module describing where we'd expect
@@ -91,6 +93,14 @@ func (ws Workspace) GetModuleLayout(modName api.ModuleName) *layout.Module {
 	// Sanity check modName.
 	funcs.MustValidate(modName)
 
+	// Anonymous modules point to the workspace root
+	if modName == anonymousModuleName {
+		modLayout := layout.NewModule(
+			ws.Layout,
+			ws.Layout.WorkspaceRoot(),
+		)
+		return &modLayout
+	}
 	// Future: check for config that remaps paths<->names.
 
 	// Assemble and return the module layout description struct.

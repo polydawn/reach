@@ -129,9 +129,7 @@ func EvalModule(
 	}
 
 	// Save a "candidate" release!
-	//  ... If (!) we have a saga name and we're not an anon module.
-	//  (If we're an anon module, there's no name to save the candidate as;
-	//  if there's no saga name, that must've been on purpose.)
+	// (Unless there's no saga name, that must've been on purpose.)
 	if sagaName == nil {
 		return nil
 	}
@@ -139,13 +137,10 @@ func EvalModule(
 	if err != nil {
 		return err // FIXME detect this WAY earlier.
 	}
-	if modName == nil {
-		return nil
-	}
-	if err := catalog.SaveCandidateRelease(landmarks.Workspace, *sagaName, *modName, exports, stderr); err != nil {
+	if err := catalog.SaveCandidateRelease(landmarks.Workspace, *sagaName, modName, exports, stderr); err != nil {
 		return err
 	}
-	if err := catalog.SaveCandidateReplay(landmarks.Workspace, *sagaName, *modName, mod, stderr); err != nil {
+	if err := catalog.SaveCandidateReplay(landmarks.Workspace, *sagaName, modName, mod, stderr); err != nil {
 		return err
 	}
 	return nil
