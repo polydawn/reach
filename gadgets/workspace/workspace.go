@@ -33,16 +33,17 @@ type Workspace struct {
 	//  e.g. `"*": ""` if every dir is a fully-qualified module name.
 	//  e.g. `"modules/*": "foo.example.org/"` if every dir under "modules/"
 	//   should be treated as a module name prefixed with "foo.example.org/".
-	// Right now we're pretending everything is `"*": ""`.
+	// Right now we're pretending everything is `"*": ""` plus `".": "unnamed"`.
 }
 
 // ResolveModuleName returns the public name of a module based on its path
 // within the workspace filesystem.
 //
-// If the workspace configuration says there's no named module at this path
-// (or the module path is the exact same as the workspace root), then
-// nil is returned, meaning it's an anonymous module.
-// (Anonymous modules can still be evaluated, but won't generate releases.)
+// By default, the path within the workspace to the module will be its name;
+// the workspace configuration can specify alternate mappings.
+// (As a special case, if the module path is the exact same as the workspace
+// root, then it will be mapped to the module name "unnamed" -- this may also
+// be overriden by workspace config.)
 //
 // The moduleLayout argument must be for a path inside the workspace;
 // otherwise a panic will be raised.
