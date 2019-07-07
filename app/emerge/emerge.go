@@ -60,14 +60,14 @@ func EvalModule(
 	// Prepare catalog view tools.
 	//  Definitely includes the workspace catalog;
 	//  may also include a view of "candidates" data, if a sagaName arg is present.
-	viewCatalogTool, viewWarehousesTool := hitchGadget.ViewTools([]catalog.Tree{
+	viewLineageTool, viewWarehousesTool := hitchGadget.ViewTools([]catalog.Tree{
 		// refactor note: we used to stack several catalog dirs here, but have backtracked from allowing that.
 		// so it's possible there's a layer of abstraction here that should be removed outright; have not fully reviewed.
 		{landmarks.CatalogRoot()},
 	}...)
 	if sagaName != nil {
-		viewCatalogTool = hitchGadget.WithCandidates(
-			viewCatalogTool,
+		viewLineageTool = hitchGadget.WithCandidates(
+			viewLineageTool,
 			catalog.Tree{filepath.Join(landmarks.WorkspaceRoot(), ".timeless/candidates/", sagaName.String())},
 		)
 	}
@@ -79,7 +79,7 @@ func EvalModule(
 		landmarks.ModuleRoot(),
 		wareStaging, // FUTURE: should probably use different warehouse for this, so it's easier to GC the shortlived objects
 	}.Resolve
-	pins, pinWs, err := funcs.ResolvePins(mod, viewCatalogTool, viewWarehousesTool, resolveTool)
+	pins, pinWs, err := funcs.ResolvePins(mod, viewLineageTool, viewWarehousesTool, resolveTool)
 	if err != nil {
 		return errcat.Errorf(
 			"reach-resolve-imports-failed",
