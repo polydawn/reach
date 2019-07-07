@@ -120,11 +120,12 @@ func EvalModule(
 	// Print the results!
 	//  This goes onto stdout as json, so it's parsible and pipeable.
 	fmt.Fprintf(stderr, "module exports:\n")
-	//	for k, v := range exports {
-	//		fmt.Fprintf(stderr, "  - %q: %v\n", k, v)
-	//	}
 	atl_exports := atlas.MustBuild(api.WareID_AtlasEntry)
-	if err := refmt.NewMarshallerAtlased(json.EncodeOptions{Line: []byte("\n"), Indent: []byte("\t")}, stdout, atl_exports).Marshal(exports); err != nil {
+	if err := refmt.NewMarshallerAtlased(
+		json.EncodeOptions{Line: []byte("\n"), Indent: []byte("\t")},
+		stdout,
+		atl_exports,
+	).Marshal(exports); err != nil {
 		panic(err)
 	}
 
