@@ -260,7 +260,7 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 									}
 
 									workspace := workspace.Workspace{*workspaceLayout}
-									var modName api.ModuleName
+									var modName *api.ModuleName
 									var releaseName *api.ReleaseName
 									var itemName *api.ItemName
 									var modNameStr string
@@ -277,26 +277,14 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 										modNameStr = args.Args()[0]
 										fallthrough
 									case 0:
-										if layout.IsModuleName(modNameStr) {
-											modName = api.ModuleName(modNameStr)
-											if err := modName.Validate(); err != nil {
-												return err
-											}
-										} else {
-											modulePath := filepath.Join(cwd, modNameStr)
-											module, err := layout.ExpectModule(*workspaceLayout, modulePath)
-											if err != nil {
-												return err
-											}
-											modName, err = workspace.ResolveModuleName(*module)
-											if err != nil {
-												return err
-											}
+										modName, err = ModuleNameOrPath(workspace, modNameStr, cwd)
+										if err != nil {
+											return err
 										}
 									default:
 										return fmt.Errorf("select takes 0 or 1 item name")
 									}
-									return waresApp.ListReleases(workspace, modName, releaseName, itemName, stdout, stderr)
+									return waresApp.ListReleases(workspace, *modName, releaseName, itemName, stdout, stderr)
 								},
 							},
 						},
