@@ -306,7 +306,7 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 						Usage: "Unpack wares",
 						Subcommands: []cli.Command{
 							{
-								Name:      "ware",
+								Name:      "wareID",
 								Usage:     "Unpack a WareID to a path",
 								ArgsUsage: "<wareId> [<outputPath>]",
 								Action: func(args *cli.Context) error {
