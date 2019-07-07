@@ -63,6 +63,11 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 					if args.Bool("recursive") {
 						// Flip args into module names
 						//  FIXME: anon invocation not sensibly handled here
+						//  TODO: a lot of things not sensibly handled here...
+						//   we should probably do something not unlike what the go commands do:
+						//    - if it starts with a `./`, interpret as a path.
+						//    - if it doesn't, interpret as a module name.
+						//    - (and make some library functions that consistently do this for us.)
 						moduleNames := []api.ModuleName(nil)
 						for _, arg := range args.Args() {
 							moduleNames = append(moduleNames, api.ModuleName(arg))
@@ -79,6 +84,7 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 						case 0:
 							moduleLayout, err = layout.FindModule(*workspaceLayout, cwd)
 						case 1:
+							// TODO: difference between moduleName and path also should be considered here (see other TODOs above).
 							moduleLayout, err = layout.ExpectModule(*workspaceLayout, filepath.Join(cwd, args.Args()[0]))
 						default:
 							return fmt.Errorf("'reach emerge' takes zero or one args")
