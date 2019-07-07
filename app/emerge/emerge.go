@@ -25,8 +25,8 @@ import (
 )
 
 func EvalModule(
-	workspace workspace.Workspace, // needed to figure out if we have a moduleName.
-	landmarks layout.Module, // needed in case of ingests with relative paths.
+	ws workspace.Workspace, // needed to figure out if we have a moduleName.
+	lm layout.Module, // needed in case of ingests with relative paths.
 	sagaName *catalog.SagaName, // may have been provided as a flag.
 	mod api.Module, // already helpfully loaded for us.
 	stdout, stderr io.Writer,
@@ -51,11 +51,11 @@ func EvalModule(
 	//   (both for intermediates, final exports, and ingests).
 	//  The wareSourcing config may be accumulated along with others per formula;
 	//   this is just the starting point minimum configuration.
-	wareStaging := api.WareStaging{ByPackType: map[api.PackType]api.WarehouseLocation{"tar": landmarks.StagingWarehouseLoc()}}
+	wareStaging := api.WareStaging{ByPackType: map[api.PackType]api.WarehouseLocation{"tar": ws.Layout.StagingWarehouseLoc()}}
 	wareSourcing := api.WareSourcing{}
-	wareSourcing.AppendByPackType("tar", landmarks.StagingWarehouseLoc())
+	wareSourcing.AppendByPackType("tar", ws.Layout.StagingWarehouseLoc())
 	// Make the workspace's local warehouse dir if it doesn't exist.
-	os.Mkdir(landmarks.StagingWarehousePath(), 0755)
+	os.Mkdir(ws.Layout.StagingWarehousePath(), 0755)
 
 	// Prepare catalog view tools.
 	//  Definitely includes the workspace catalog;
@@ -63,12 +63,12 @@ func EvalModule(
 	viewLineageTool, viewWarehousesTool := hitchGadget.ViewTools([]catalog.Tree{
 		// refactor note: we used to stack several catalog dirs here, but have backtracked from allowing that.
 		// so it's possible there's a layer of abstraction here that should be removed outright; have not fully reviewed.
-		{landmarks.CatalogRoot()},
+		{ws.Layout.CatalogRoot()},
 	}...)
 	if sagaName != nil {
 		viewLineageTool = hitchGadget.WithCandidates(
 			viewLineageTool,
-			catalog.Tree{filepath.Join(landmarks.WorkspaceRoot(), ".timeless/candidates/", sagaName.String())},
+			catalog.Tree{filepath.Join(ws.Layout.WorkspaceRoot(), ".timeless/candidates/", sagaName.String())},
 		)
 	}
 
@@ -76,7 +76,7 @@ func EvalModule(
 	//  This includes both viewing catalogs (cheap, fast),
 	//  *and invoking ingest* (potentially costly).
 	resolveTool := ingest.Config{
-		landmarks.ModuleRoot(),
+		lm.ModuleRoot(),
 		wareStaging, // FUTURE: should probably use different warehouse for this, so it's easier to GC the shortlived objects
 	}.Resolve
 	pins, pinWs, err := funcs.ResolvePins(mod, viewLineageTool, viewWarehousesTool, resolveTool)
@@ -99,8 +99,8 @@ func EvalModule(
 	// Ensure memoization is enabled.
 	//  Future: this is a bit of an odd reach-around way to configure this.
 	//  PRs which propose more/better ways to enable and parameterize memoization would be extremely welcomed.
-	os.Setenv("REPEATR_MEMODIR", workspace.Layout.MemoDir())
-	os.Mkdir(workspace.Layout.MemoDir(), 0755) // Errors ignored.  Repeatr will emit warns, but work.
+	os.Setenv("REPEATR_MEMODIR", ws.Layout.MemoDir())
+	os.Mkdir(ws.Layout.MemoDir(), 0755) // Errors ignored.  Repeatr will emit warns, but work.
 
 	// Begin the evaluation!
 	exports, err := module.Evaluate(
@@ -134,14 +134,14 @@ func EvalModule(
 	if sagaName == nil {
 		return nil
 	}
-	modName, err := workspace.ResolveModuleName(landmarks)
+	modName, err := ws.ResolveModuleName(lm)
 	if err != nil {
 		return err // FIXME detect this WAY earlier.
 	}
-	if err := catalog.SaveCandidateRelease(landmarks.Workspace, *sagaName, modName, exports, stderr); err != nil {
+	if err := catalog.SaveCandidateRelease(ws.Layout, *sagaName, modName, exports, stderr); err != nil {
 		return err
 	}
-	if err := catalog.SaveCandidateReplay(landmarks.Workspace, *sagaName, modName, mod, stderr); err != nil {
+	if err := catalog.SaveCandidateReplay(ws.Layout, *sagaName, modName, mod, stderr); err != nil {
 		return err
 	}
 	return nil
