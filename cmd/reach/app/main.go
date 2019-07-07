@@ -13,6 +13,7 @@ import (
 	"go.polydawn.net/reach/app/catalog"
 	"go.polydawn.net/reach/app/ci"
 	"go.polydawn.net/reach/app/emerge"
+	"go.polydawn.net/reach/app/wares"
 	"go.polydawn.net/reach/gadgets/catalog"
 	"go.polydawn.net/reach/gadgets/layout"
 	"go.polydawn.net/reach/gadgets/module"
@@ -187,6 +188,55 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 								exitCode = 4 // TODO standardize
 							}
 							return err
+						},
+					},
+				},
+			},
+			{
+				Name: "wares",
+				Usage: "look up wares by release or candidate",
+				Subcommands: []cli.Command{
+					{
+						Name: "select",
+						Usage: "View and search for wares",
+						Subcommands: []cli.Command{
+							{
+								Name: "candidates",
+								Usage: "List release candidates",
+								Action: func(args *cli.Context) error {
+									cwd, err := os.Getwd()
+									if err != nil {
+										return err
+									}
+
+									// Parse other flags.
+									sn, _ := catalog.ParseSagaName("default") // TODO more complicated defaults and flags
+
+									// Find workspace.
+									workspaceLayout, err := layout.FindWorkspace(cwd)
+									if err != nil {
+										return err
+									}
+									
+									workspace := workspace.Workspace{*workspaceLayout}
+									moduleLayout, err := layout.FindModule(*workspaceLayout, cwd)
+									if err != nil {
+										return err
+									}
+
+									var itemName *api.ItemName
+									switch args.NArg() {
+									case 0:
+										itemName = nil
+									case 1:
+										tmp := api.ItemName(args.Args()[0])
+										itemName = &tmp
+									default:
+										return fmt.Errorf("select takes 0 or 1 item name")
+									}
+									return waresApp.ListCandidates(workspace, *moduleLayout, *sn, itemName, stdout, stderr)
+								},
+							},
 						},
 					},
 				},
