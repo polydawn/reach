@@ -199,15 +199,15 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 				},
 			},
 			{
-				Name: "wares",
+				Name:  "wares",
 				Usage: "look up wares by release or candidate",
 				Subcommands: []cli.Command{
 					{
-						Name: "select",
+						Name:  "select",
 						Usage: "View and search for wares",
 						Subcommands: []cli.Command{
 							{
-								Name: "candidates",
+								Name:  "candidates",
 								Usage: "List release candidates",
 								Action: func(args *cli.Context) error {
 									cwd, err := os.Getwd()
@@ -223,7 +223,7 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 									if err != nil {
 										return err
 									}
-									
+
 									workspace := workspace.Workspace{*workspaceLayout}
 									moduleLayout, err := layout.FindModule(*workspaceLayout, cwd)
 									if err != nil {
@@ -241,6 +241,62 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 										return fmt.Errorf("select takes 0 or 1 item name")
 									}
 									return waresApp.ListCandidates(workspace, *moduleLayout, *sn, itemName, stdout, stderr)
+								},
+							},
+							{
+								Name:      "releases",
+								Usage:     "List releases",
+								ArgsUsage: "[<moduleName> [<releaseName> [<itemName>]]]",
+								Action: func(args *cli.Context) error {
+									cwd, err := os.Getwd()
+									if err != nil {
+										return err
+									}
+
+									// Find workspace.
+									workspaceLayout, err := layout.FindWorkspace(cwd)
+									if err != nil {
+										return err
+									}
+
+									workspace := workspace.Workspace{*workspaceLayout}
+									var modName api.ModuleName
+									var releaseName *api.ReleaseName
+									var itemName *api.ItemName
+									var modNameStr string
+									switch args.NArg() {
+									case 3:
+										tmp := api.ItemName(args.Args()[2])
+										itemName = &tmp
+										fallthrough
+									case 2:
+										tmp := api.ReleaseName(args.Args()[1])
+										releaseName = &tmp
+										fallthrough
+									case 1:
+										modNameStr = args.Args()[0]
+										fallthrough
+									case 0:
+										if layout.IsModuleName(modNameStr) {
+											modName = api.ModuleName(modNameStr)
+											if err := modName.Validate(); err != nil {
+												return err
+											}
+										} else {
+											modulePath := filepath.Join(cwd, modNameStr)
+											module, err := layout.ExpectModule(*workspaceLayout, modulePath)
+											if err != nil {
+												return err
+											}
+											modName, err = workspace.ResolveModuleName(*module)
+											if err != nil {
+												return err
+											}
+										}
+									default:
+										return fmt.Errorf("select takes 0 or 1 item name")
+									}
+									return waresApp.ListReleases(workspace, modName, releaseName, itemName, stdout, stderr)
 								},
 							},
 						},
