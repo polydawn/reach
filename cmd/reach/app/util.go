@@ -15,10 +15,16 @@ func ModuleNameOrPath(ws workspace.Workspace, modNameOrPath, curDir string) (*ap
 		}
 		return &modName, nil
 	} else {
-		modulePath := filepath.Join(curDir, modNameOrPath)
-		module, err := layout.ExpectModule(ws.Layout, modulePath)
-		if err != nil {
-			return nil, err
+		var module *layout.Module
+		var err error
+		if modNameOrPath == "" {
+			module, err = layout.FindModule(ws.Layout, curDir)
+		} else {
+			modulePath := filepath.Join(curDir, modNameOrPath)
+			module, err = layout.ExpectModule(ws.Layout, modulePath)
+			if err != nil {
+				return nil, err
+			}
 		}
 		modName, err := ws.ResolveModuleName(*module)
 		if err != nil {
