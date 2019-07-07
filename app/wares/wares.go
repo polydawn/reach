@@ -124,6 +124,6 @@ func UnpackWareContents(context context.Context, ws workspace.Workspace, wareId 
 	if err != nil {
 		return err
 	}
-	fmt.Fprintf(stdout, "Unpacked WareID: %s\n", unpackedId)
+	fmt.Fprintf(stderr, "Unpacked WareID: %s\n", unpackedId)
 	return nil
 }
