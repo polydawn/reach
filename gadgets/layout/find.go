@@ -83,6 +83,23 @@ func FindWorkspace(startPath string) (*Workspace, error) {
 	}
 }
 
+// IsModuleName checks if a string is prefixed with ".":
+// if it is, it should be considered a module *path*,
+// and you should use FindModule or ExpectModule to get a layout.Module;
+// if not, it should be interpretered as a ModuleName,
+// and you can use `workspace.Workspace.GetModuleLayout` to find a layout
+// corresponding to it (or, just use it directly in catalog functions, etc).
+//
+// As a corner case, empty string is considered false (but the caller may
+// wish to consider this case separately anyway -- typically, a lack of
+// any name or string at all can be taken to mean "use FindModule on cwd").
+func IsModuleName(str string) bool {
+	if len(str) < 1 || str[0] == '.' {
+		return false
+	}
+	return true
+}
+
 // FindModule looks for the 'module.tl' file indicating a module
 // and returns a description of the found paths.
 //
