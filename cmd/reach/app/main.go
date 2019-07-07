@@ -207,8 +207,9 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 						Usage: "View and search for wares",
 						Subcommands: []cli.Command{
 							{
-								Name:  "candidates",
-								Usage: "List release candidates",
+								Name:      "candidates",
+								Usage:     "List release candidates",
+								ArgsUsage: "[<item-name>]",
 								Action: func(args *cli.Context) error {
 									cwd, err := os.Getwd()
 									if err != nil {
