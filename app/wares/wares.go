@@ -11,13 +11,13 @@ import (
 	"github.com/polydawn/refmt/obj/atlas"
 
 	"go.polydawn.net/go-timeless-api"
-	"go.polydawn.net/go-timeless-api/rio"
 	"go.polydawn.net/go-timeless-api/hitch"
+	"go.polydawn.net/go-timeless-api/rio"
+	rioclient "go.polydawn.net/go-timeless-api/rio/client/exec"
 	"go.polydawn.net/reach/gadgets/catalog"
 	hitchGadget "go.polydawn.net/reach/gadgets/catalog/hitch"
 	"go.polydawn.net/reach/gadgets/layout"
 	"go.polydawn.net/reach/gadgets/workspace"
-	rioclient "go.polydawn.net/go-timeless-api/rio/client/exec"
 )
 
 func ListCandidates(ws workspace.Workspace, layoutModule layout.Module, sagaName catalog.SagaName, itemName *api.ItemName, stdout, stderr io.Writer) error {
@@ -110,13 +110,13 @@ func ListReleases(ws workspace.Workspace, moduleName api.ModuleName, releaseName
 	return nil
 }
 
-func UnpackWareContents(context context.Context, ws workspace.Workspace, wareId api.WareID, path string, stdout,stderr io.Writer) error {
+func UnpackWareContents(context context.Context, ws workspace.Workspace, wareId api.WareID, path string, stdout, stderr io.Writer) error {
 	unpackedId, err := rioclient.UnpackFunc(context,
 		wareId,
 		path,
 		api.FilesetUnpackFilter_LowPriv,
 		rio.Placement_Direct,
-		[]api.WarehouseLocation {
+		[]api.WarehouseLocation{
 			ws.Layout.StagingWarehouseLoc(),
 		},
 		rio.Monitor{},

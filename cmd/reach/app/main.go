@@ -302,49 +302,55 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 						},
 					},
 					{
-						Name: "unpack",
-						Usage: "Unpack a WareID to a path",
-						ArgsUsage: "<wareId> [<outputPath>]",
-						Action: func(args *cli.Context) error {
-							unpackDir := "tmp.unpack"
-							var wareId api.WareID
-							switch args.NArg() {
-							case 2:
-								path := args.Args()[1]
-								if path == "." {
-									return fmt.Errorf("Won't unpack to '.', that would destroy your current directory")
-								}
-								unpackDir = path
-								fallthrough
-							case 1:
-								var err error
-								wareId, err = api.ParseWareID(args.Args()[0])
-								if err != nil {
-									return err
-								}
-							case 0:
-								return fmt.Errorf("WareId is a required parameter.  See -h for help")
-							default:
-								return fmt.Errorf("unpack takes 1 or 2 arguments.")
-							}
-							cwd, err := os.Getwd()
-							if err != nil {
-								return err
-							}
+						Name:  "unpack",
+						Usage: "Unpack wares",
+						Subcommands: []cli.Command{
+							{
+								Name:      "ware",
+								Usage:     "Unpack a WareID to a path",
+								ArgsUsage: "<wareId> [<outputPath>]",
+								Action: func(args *cli.Context) error {
+									unpackDir := "tmp.unpack"
+									var wareId api.WareID
+									switch args.NArg() {
+									case 2:
+										path := args.Args()[1]
+										if path == "." {
+											return fmt.Errorf("Won't unpack to '.', that would destroy your current directory")
+										}
+										unpackDir = path
+										fallthrough
+									case 1:
+										var err error
+										wareId, err = api.ParseWareID(args.Args()[0])
+										if err != nil {
+											return err
+										}
+									case 0:
+										return fmt.Errorf("WareId is a required parameter.  See -h for help")
+									default:
+										return fmt.Errorf("unpack takes 1 or 2 arguments.")
+									}
+									cwd, err := os.Getwd()
+									if err != nil {
+										return err
+									}
 
-							// Find workspace.
-							workspaceLayout, err := layout.FindWorkspace(cwd)
-							if err != nil {
-								return err
-							}
+									// Find workspace.
+									workspaceLayout, err := layout.FindWorkspace(cwd)
+									if err != nil {
+										return err
+									}
 
-							workspace := workspace.Workspace{*workspaceLayout}
-							unpackPath := filepath.Join(cwd, unpackDir)
-							err = os.MkdirAll(unpackPath, 0644)
-							if err != nil {
-								return err
-							}
-							return waresApp.UnpackWareContents(ctx, workspace, wareId, unpackPath, stdout, stderr) 
+									workspace := workspace.Workspace{*workspaceLayout}
+									unpackPath := filepath.Join(cwd, unpackDir)
+									err = os.MkdirAll(unpackPath, 0644)
+									if err != nil {
+										return err
+									}
+									return waresApp.UnpackWareContents(ctx, workspace, wareId, unpackPath, stdout, stderr)
+								},
+							},
 						},
 					},
 				},
