@@ -28,11 +28,11 @@ func TestNoargsHelptext(t *testing.T) {
 		   See https://repeatr.io/ for more complete documention!
 
 		COMMANDS:
-		     emerge   evaluate a pipeline, logging intermediate results and reporting final exports
-		     ci       given a module with one ingest using git, build it once, then build it again each time the git repo updates
-		     catalog  catalog subcommands help maintain the release catalog info tree
-		     wares    look up wares by release or candidate
-		     help, h  Shows a list of commands or help for one command
+		   emerge   evaluate a pipeline, logging intermediate results and reporting final exports
+		   ci       given a module with one ingest using git, build it once, then build it again each time the git repo updates
+		   catalog  catalog subcommands help maintain the release catalog info tree
+		   wares    look up wares by release or candidate
+		   help, h  Shows a list of commands or help for one command
 
 		GLOBAL OPTIONS:
 		   --help, -h     show help

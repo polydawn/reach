@@ -64,3 +64,6 @@
 [submodule ".gopath/src/go.polydawn.net/rio"]
 	path = .gopath/src/go.polydawn.net/rio
 	url = https://github.com/polydawn/rio
+[submodule ".gopath/src/golang.org/x/sys"]
+	path = .gopath/src/golang.org/x/sys
+	url = https://go.googlesource.com/sys
