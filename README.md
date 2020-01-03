@@ -74,3 +74,14 @@ Reach development is in a rapid iteration phase and PRs for documentation are mo
 - catalog authoring and syncing tools
 - relationship of "modules" to "replay instructions" in releases (they're the same!)
 - "candidates mode" for distro-scale multi-module release coordination
+
+Building from source
+--------------------
+
+For local development, a version of reach can be built from this repository using your system version of go.
+A locally built reach will diverge from the [Timeless distribution](https://github.com/polydawn/timeless) because building in this way will not respect the build environment described in `module.tl`.
+
+```
+git submodule update --init
+GOPATH=$PWD/.gopath go install ./cmd/reach/
+```
