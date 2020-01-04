@@ -9,6 +9,9 @@ import (
 )
 
 func Test(t *testing.T) {
+	if testing.Short() {
+		t.Skipf("integration test -- not running with 'short' mode")
+	}
 	WithCwdClonedTmpDir(GetCwdAbs(), func() {
 		exitCode, stdout, stderr := RunIntoBuffer("reach", "emerge")
 		Wish(t, exitCode, ShouldEqual, 0)
