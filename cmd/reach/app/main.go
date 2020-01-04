@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/urfave/cli"
 
@@ -430,9 +431,29 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 		},
 	})
 
+	app.Commands = append(app.Commands, cli.Command{
+		Name:  "synopsis",
+		Usage: "list every command and subcommand, for quick reference",
+		Action: func(args *cli.Context) error {
+			printSynopsis(stderr, []string{"reach"}, app.Commands)
+			return nil
+		},
+	})
+
 	if err := app.Run(args); err != nil {
 		exitCode = 1
 		fmt.Fprintf(stderr, "reach: %s\n", err)
 	}
 	return
+}
+
+func printSynopsis(stderr io.Writer, stack []string, cmds []cli.Command) {
+	for _, cmd := range cmds {
+		if cmd.Subcommands != nil {
+			printSynopsis(stderr, append(stack, cmd.Name), cmd.Subcommands)
+		}
+		if cmd.Action != nil {
+			fmt.Fprintf(stderr, "%s\n", strings.Join(append(stack, cmd.Name), " "))
+		}
+	}
 }
