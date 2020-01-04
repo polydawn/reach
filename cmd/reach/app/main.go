@@ -453,7 +453,7 @@ func printSynopsis(stderr io.Writer, stack []string, cmds []cli.Command) {
 			printSynopsis(stderr, append(stack, cmd.Name), cmd.Subcommands)
 		}
 		if cmd.Action != nil {
-			fmt.Fprintf(stderr, "%s\n", strings.Join(append(stack, cmd.Name), " "))
+			fmt.Fprintf(stderr, "%s\n", strings.Join(append(stack, cmd.Name), " ")+" \033[1;30m"+cmd.ArgsUsage+"\033[m")
 		}
 	}
 }
