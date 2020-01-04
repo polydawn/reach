@@ -27,6 +27,21 @@
 			"operation": {
 				"inputs": {
 					"/": "base",
+					"/app/go": "go",
+					"/task": "src"
+				},
+				"action": {
+					"exec": [
+						"/bin/bash", "-c",
+						"export PATH=$PATH:/app/go/go/bin && export GOPATH=$PWD/.gopath && go test -short ./..."
+					]
+				}
+			}
+		},
+		"smoketest": {
+			"operation": {
+				"inputs": {
+					"/": "base",
 					"/task": "build.bin"
 				},
 				"action": {

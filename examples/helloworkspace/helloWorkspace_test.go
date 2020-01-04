@@ -16,6 +16,9 @@ import (
 */
 
 func TestEmergeOutsideModule(t *testing.T) {
+	if testing.Short() {
+		t.Skipf("integration test -- not running with 'short' mode")
+	}
 	WithCwdClonedTmpDir(GetCwdAbs(), func() {
 		exitCode, stdout, stderr := RunIntoBuffer("reach", "emerge")
 		Wish(t, exitCode, ShouldEqual, 1)
@@ -27,6 +30,9 @@ func TestEmergeOutsideModule(t *testing.T) {
 }
 
 func TestEmergeInModule(t *testing.T) {
+	if testing.Short() {
+		t.Skipf("integration test -- not running with 'short' mode")
+	}
 	WithCwdClonedTmpDir(GetCwdAbs(), func() {
 		os.Chdir("example.org/proj-foo")
 		exitCode, stdout, stderr := RunIntoBuffer("reach", "emerge")
@@ -96,6 +102,9 @@ func TestEmergeInModule(t *testing.T) {
 }
 
 func TestEmergeViaModuleArg(t *testing.T) {
+	if testing.Short() {
+		t.Skipf("integration test -- not running with 'short' mode")
+	}
 	WithCwdClonedTmpDir(GetCwdAbs(), func() {
 		exitCode, stdout, stderr := RunIntoBuffer("reach", "emerge", "example.org/proj-foo")
 		Wish(t, exitCode, ShouldEqual, 0)
@@ -162,6 +171,9 @@ func TestEmergeViaModuleArg(t *testing.T) {
 }
 
 func TestEmergeRecursion(t *testing.T) {
+	if testing.Short() {
+		t.Skipf("integration test -- not running with 'short' mode")
+	}
 	t.Run("one recursion (when not enabled) should fail", func(t *testing.T) {
 		WithCwdClonedTmpDir(GetCwdAbs(), func() {
 			exitCode, _, _ := RunIntoBuffer("reach", "emerge", "example.org/proj-bar")
