@@ -182,8 +182,36 @@ func TestEmergeRecursion(t *testing.T) {
 	})
 	t.Run("one recursion should succeed", func(t *testing.T) {
 		WithCwdClonedTmpDir(GetCwdAbs(), func() {
-			exitCode, _, _ := RunIntoBuffer("reach", "emerge", "-r", "example.org/proj-bar")
+			exitCode, stdout, stderr := RunIntoBuffer("reach", "emerge", "-r", "example.org/proj-bar")
 			Wish(t, exitCode, ShouldEqual, 0)
+			// What comes next are assertions that match what the output currently is;
+			//  but it's not at all a statement that this is a polished experience, or what this output *should* be.
+			//  Work is needed on presentation of logs and results when doing evaluation of multiple modules.
+			Wish(t, stderr, ShouldEqual, Dedent(`
+				module loaded
+				module contains 1 steps
+				module evaluation plan order:
+				  - 01: main
+				imports pinned to hashes:
+				  - "base": tar:6q7G4hWr283FpTa5Lf8heVqw9t97b5VoMU6AGszuBYAz9EzQdeHVFAou7c4W9vFcQ6
+				module eval complete.
+				module exports:
+				module loaded
+				module contains 1 steps
+				module evaluation plan order:
+				  - 01: main
+				imports pinned to hashes:
+				  - "base": tar:6q7G4hWr283FpTa5Lf8heVqw9t97b5VoMU6AGszuBYAz9EzQdeHVFAou7c4W9vFcQ6
+				  - "pipe": tar:89LoLzgAYkndYpNQC7H94eR6tU6F4EWy2yFGouDCQz1cx9JpYmEPyDm2YWwYTGDvPv
+				module eval complete.
+				module exports:
+			`))
+			Wish(t, stdout, ShouldEqual, Dedent(`
+				{
+					"wowslot": "tar:89LoLzgAYkndYpNQC7H94eR6tU6F4EWy2yFGouDCQz1cx9JpYmEPyDm2YWwYTGDvPv"
+				}
+				{}
+			`))
 		})
 	})
 	// TODO: more recursion tests

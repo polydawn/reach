@@ -14,7 +14,7 @@ func TestNoargsHelptext(t *testing.T) {
 	Wish(t, stdout, ShouldEqual, "")
 	Wish(t, stderr, ShouldEqual, Dedent(`
 		NAME:
-		   reach
+		   reach - build graph evaluation and catalog management for the Timeless Stack.
 
 		USAGE:
 		   Reach is a multipurpose tool for driving and managing Timeless Stack projects.
@@ -36,8 +36,7 @@ func TestNoargsHelptext(t *testing.T) {
 		   help, h   Shows a list of commands or help for one command
 
 		GLOBAL OPTIONS:
-		   --help, -h     show help
-		   --version, -v  print the version
+		   --help, -h  show help (default: false)
 	`))
 }
 

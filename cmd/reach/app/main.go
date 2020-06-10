@@ -23,7 +23,8 @@ import (
 
 func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io.Writer) (exitCode int) {
 	app := &cli.App{
-		Name: "reach",
+		Name:  "reach",
+		Usage: "build graph evaluation and catalog management for the Timeless Stack.",
 		UsageText: "Reach is a multipurpose tool for driving and managing Timeless Stack projects.\n" +
 			"   Major functions of `reach` include:\n" +
 			"\n" +
@@ -42,13 +43,14 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 		},
 	}
 
-	app.Commands = append(app.Commands, cli.Command{
+	app.Commands = append(app.Commands, &cli.Command{
 		Name:  "emerge",
 		Usage: "evaluate a pipeline, logging intermediate results and reporting final exports",
 		Flags: []cli.Flag{
-			cli.BoolFlag{
-				Name:  "r, recursive",
-				Usage: "if set, module evaluation will allow recursion: imports of candidate releases -- e.g., of the form \"catalog:$module:candidate:$item\" -- will cause that module to be freshly built rather than using an existing release.",
+			&cli.BoolFlag{
+				Name:    "recursive",
+				Aliases: []string{"r"},
+				Usage:   "if set, module evaluation will allow recursion: imports of candidate releases -- e.g., of the form \"catalog:$module:candidate:$item\" -- will cause that module to be freshly built rather than using an existing release.",
 			},
 		},
 		Action: func(args *cli.Context) error {
@@ -78,7 +80,7 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 				//    - if it doesn't, interpret as a module name.
 				//    - (and make some library functions that consistently do this for us.)
 				moduleNames := []api.ModuleName(nil)
-				for _, arg := range args.Args() {
+				for _, arg := range args.Args().Slice() {
 					moduleNames = append(moduleNames, api.ModuleName(arg))
 				}
 
@@ -94,7 +96,7 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 					moduleLayout, err = layout.FindModule(*workspaceLayout, cwd)
 				case 1:
 					// TODO: difference between moduleName and path also should be considered here (see other TODOs above).
-					moduleLayout, err = layout.ExpectModule(*workspaceLayout, filepath.Join(cwd, args.Args()[0]))
+					moduleLayout, err = layout.ExpectModule(*workspaceLayout, filepath.Join(cwd, args.Args().First()))
 				default:
 					return fmt.Errorf("'reach emerge' takes zero or one args")
 				}
@@ -114,7 +116,7 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 		},
 	})
 
-	app.Commands = append(app.Commands, cli.Command{
+	app.Commands = append(app.Commands, &cli.Command{
 		Name:  "ci",
 		Usage: "given a module with one ingest using git, build it once, then build it again each time the git repo updates",
 		Action: func(args *cli.Context) error {
@@ -135,7 +137,7 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 			case 0:
 				moduleLayout, err = layout.FindModule(*workspaceLayout, cwd)
 			case 1:
-				moduleLayout, err = layout.ExpectModule(*workspaceLayout, filepath.Join(cwd, args.Args()[0]))
+				moduleLayout, err = layout.ExpectModule(*workspaceLayout, filepath.Join(cwd, args.Args().First()))
 			default:
 				return fmt.Errorf("'reach ci' takes zero or one args")
 			}
@@ -154,15 +156,15 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 		},
 	})
 
-	app.Commands = append(app.Commands, cli.Command{
+	app.Commands = append(app.Commands, &cli.Command{
 		Name:  "catalog",
 		Usage: "catalog subcommands help maintain the release catalog info tree",
-		Subcommands: []cli.Command{
+		Subcommands: []*cli.Command{
 			{
 				Name:  "lint",
 				Usage: "verify the entire catalog tree is in canonical form (rewrites all files)",
 				Flags: []cli.Flag{
-					cli.BoolFlag{
+					&cli.BoolFlag{
 						Name:  "rewrite",
 						Usage: "if set, all files will be rewritten to ensure bytewise canonicalization",
 					},
@@ -182,7 +184,7 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 						pth = workspaceLayout.CatalogRoot()
 					case 1:
 						var err error
-						pth, err = filepath.Abs(args.Args()[0])
+						pth, err = filepath.Abs(args.Args().First())
 						if err != nil {
 							panic(err)
 						}
@@ -209,14 +211,14 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 		},
 	})
 
-	app.Commands = append(app.Commands, cli.Command{
+	app.Commands = append(app.Commands, &cli.Command{
 		Name:  "wares",
 		Usage: "look up wares by release or candidate",
-		Subcommands: []cli.Command{
+		Subcommands: []*cli.Command{
 			{
 				Name:  "select",
 				Usage: "View and search for wares",
-				Subcommands: []cli.Command{
+				Subcommands: []*cli.Command{
 					{
 						Name:      "candidates",
 						Usage:     "List release candidates",
@@ -243,12 +245,12 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 							var modName *api.ModuleName
 							switch args.NArg() {
 							case 2:
-								tmp := api.ItemName(args.Args()[1])
+								tmp := api.ItemName(args.Args().Slice()[1])
 								itemName = &tmp
 								fallthrough
 
 							case 1:
-								modNameOrPath = args.Args()[0]
+								modNameOrPath = args.Args().Slice()[0]
 								fallthrough
 							case 0:
 								modName, err = ModuleNameOrPath(ws, modNameOrPath, cwd)
@@ -285,15 +287,15 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 							var modNameStr string
 							switch args.NArg() {
 							case 3:
-								tmp := api.ItemName(args.Args()[2])
+								tmp := api.ItemName(args.Args().Slice()[2])
 								itemName = &tmp
 								fallthrough
 							case 2:
-								tmp := api.ReleaseName(args.Args()[1])
+								tmp := api.ReleaseName(args.Args().Slice()[1])
 								releaseName = &tmp
 								fallthrough
 							case 1:
-								modNameStr = args.Args()[0]
+								modNameStr = args.Args().Slice()[0]
 								fallthrough
 							case 0:
 								modName, err = ModuleNameOrPath(workspace, modNameStr, cwd)
@@ -311,7 +313,7 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 			{
 				Name:  "unpack",
 				Usage: "Unpack wares",
-				Subcommands: []cli.Command{
+				Subcommands: []*cli.Command{
 					{
 						Name:      "wareID",
 						Usage:     "Unpack a WareID to a path",
@@ -321,7 +323,7 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 							var wareId api.WareID
 							switch args.NArg() {
 							case 2:
-								path := args.Args()[1]
+								path := args.Args().Slice()[1]
 								if path == "." {
 									return fmt.Errorf("Won't unpack to '.', that would destroy your current directory")
 								}
@@ -329,7 +331,7 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 								fallthrough
 							case 1:
 								var err error
-								wareId, err = api.ParseWareID(args.Args()[0])
+								wareId, err = api.ParseWareID(args.Args().Slice()[0])
 								if err != nil {
 									return err
 								}
@@ -378,14 +380,14 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 							ws := workspace.Workspace{*workspaceLayout}
 							switch args.NArg() {
 							case 3:
-								unpackDir = args.Args()[2]
+								unpackDir = args.Args().Slice()[2]
 								fallthrough
 							case 2:
-								modName, err := ModuleNameOrPath(ws, args.Args()[0], cwd)
+								modName, err := ModuleNameOrPath(ws, args.Args().Slice()[0], cwd)
 								if err != nil {
 									return err
 								}
-								itemName := api.ItemName(args.Args()[1])
+								itemName := api.ItemName(args.Args().Slice()[1])
 								return waresApp.UnpackCandidate(ctx, ws, *sn, *modName, itemName, unpackDir, stdout, stderr)
 							default:
 								return fmt.Errorf("'unpack candidate' takes either 2 or 3 arguments.  See -h for details.")
@@ -411,15 +413,15 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 							ws := workspace.Workspace{*workspaceLayout}
 							switch args.NArg() {
 							case 4:
-								unpackDir = args.Args()[3]
+								unpackDir = args.Args().Slice()[3]
 								fallthrough
 							case 3:
-								modName, err := ModuleNameOrPath(ws, args.Args()[0], cwd)
+								modName, err := ModuleNameOrPath(ws, args.Args().Slice()[0], cwd)
 								if err != nil {
 									return err
 								}
-								releaseName := api.ReleaseName(args.Args()[1])
-								itemName := api.ItemName(args.Args()[2])
+								releaseName := api.ReleaseName(args.Args().Slice()[1])
+								itemName := api.ItemName(args.Args().Slice()[2])
 								return waresApp.UnpackRelease(ctx, ws, *modName, releaseName, itemName, unpackDir, stdout, stderr)
 							default:
 								return fmt.Errorf("'unpack release' takes either 3 or 4 arguments.  See -h for details.")
@@ -431,7 +433,7 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 		},
 	})
 
-	app.Commands = append(app.Commands, cli.Command{
+	app.Commands = append(app.Commands, &cli.Command{
 		Name:  "synopsis",
 		Usage: "list every command and subcommand, for quick reference",
 		Action: func(args *cli.Context) error {
@@ -447,7 +449,7 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 	return
 }
 
-func printSynopsis(stderr io.Writer, stack []string, cmds []cli.Command) {
+func printSynopsis(stderr io.Writer, stack []string, cmds []*cli.Command) {
 	for _, cmd := range cmds {
 		if cmd.Subcommands != nil {
 			printSynopsis(stderr, append(stack, cmd.Name), cmd.Subcommands)
