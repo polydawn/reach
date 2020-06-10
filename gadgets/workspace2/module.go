@@ -13,3 +13,12 @@ type Module struct {
 	// FIXME there's a type for this.
 	name string
 }
+
+// Path returns the module's path.
+//
+// Typically this should not need to be used
+// (other functions on the module object work with it on your behalf),
+// but it is useful to print in logs and user-facing messages.
+func (mod *Module) Path() string {
+	return mod.path
+}

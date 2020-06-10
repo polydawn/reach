@@ -43,6 +43,15 @@ func NewWorkspace(rootPath string) *Workspace {
 	}
 }
 
+// Path returns the workspace's path.
+//
+// Typically this should not need to be used
+// (other functions on the workspace object work with it on your behalf),
+// but it is useful to print in logs and user-facing messages.
+func (ws *Workspace) Path() string {
+	return ws.path
+}
+
 // Load loads the workspace configuration (if it isn't already), or errors
 // if the configuration is malformed.
 //

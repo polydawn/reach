@@ -20,24 +20,38 @@ func (e ErrSearchingFilesystem) Unwrap() error {
 
 // ErrWorkspaceNotFound is returned from functions such as FindWorkspace
 // which attempt to detect workspace directory patterns.
-// It doesn't include any reasons; the parameters to whatever function
-// returned this error are probably the relevant information to include
-// in any larger report.
-type ErrWorkspaceNotFound struct{}
+type ErrWorkspaceNotFound struct {
+	SearchedExactly string // Either SearchedExactly or SearchedFrom will be set.
+	SearchedFrom    string // Either SearchedExactly or SearchedFrom will be set.
+	SearchedUpTo    string // SeachedUpTo is set if there was a basis path that limited the search.
+}
 
 func (e ErrWorkspaceNotFound) Error() string {
-	return "workspace not found"
+	if e.SearchedExactly != "" {
+		return fmt.Sprintf("workspace not found (searched for one at %q but found no '%s' dir)", e.SearchedExactly, magicWorkspaceDirname)
+	}
+	if e.SearchedUpTo == "" {
+		return fmt.Sprintf("workspace not found (searched starting at %q and all the way up to the root without finding a '%s' dir)", e.SearchedFrom, magicWorkspaceDirname)
+	}
+	return fmt.Sprintf("workspace not found (searched starting at %q and up to %q without finding a '%s' dir)", e.SearchedFrom, e.SearchedUpTo, magicWorkspaceDirname)
 }
 
 // ErrModuleNotFound is returned from functions such as FindModule
 // which attempt to detect module file patterns.
-// It doesn't include any reasons; the parameters to whatever function
-// returned this error are probably the relevant information to include
-// in any larger report.
-type ErrModuleNotFound struct{}
+type ErrModuleNotFound struct {
+	SearchedExactly string // Either SearchedExactly or SearchedFrom will be set.
+	SearchedFrom    string // Either SearchedExactly or SearchedFrom will be set.
+	SearchedUpTo    string // SeachedUpTo is set if there was a basis path that limited the search.
+}
 
 func (e ErrModuleNotFound) Error() string {
-	return "module not found"
+	if e.SearchedExactly != "" {
+		return fmt.Sprintf("module not found (searched for one at %q but found no '%s' file)", e.SearchedExactly, magicModuleFilename)
+	}
+	if e.SearchedUpTo == "" {
+		return fmt.Sprintf("module not found (searched starting at %q and all the way up to the root without finding a '%s' file)", e.SearchedFrom, magicModuleFilename)
+	}
+	return fmt.Sprintf("module not found (searched starting at %q and up to %q without finding a '%s' file)", e.SearchedFrom, e.SearchedUpTo, magicModuleFilename)
 }
 
 // ErrNotInWorkspace is returned from functions such as FindModule

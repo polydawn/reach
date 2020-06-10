@@ -41,28 +41,30 @@ import (
 //
 func FindWorkspace(basisPath, searchPath string) (ws *Workspace, remainingSearchPath string, err error) {
 	// Our search loops over searchPath, popping a path segment off at the end of every round.
+	//  Keep the given searchPath in hand; we might need it for an error report.
+	searchAt := searchPath
 	for {
 		// Assume the search path exists and is a dir (we'll get a reasonable error anyway if it's not);
 		//  join that path with our search target and try to open it.
-		f, err := os.Open(filepath.Join(basisPath, searchPath, magicWorkspaceDirname))
+		f, err := os.Open(filepath.Join(basisPath, searchAt, magicWorkspaceDirname))
 		f.Close()
 		if err == nil { // no error?  Found it!
-			return NewWorkspace(filepath.Join(basisPath, searchPath)), filepath.Dir(searchPath), nil
+			return NewWorkspace(filepath.Join(basisPath, searchAt)), filepath.Dir(searchAt), nil
 		}
 		if os.IsNotExist(err) { // no such thing?  oh well.  pop a segment and keep looking.
-			searchPath = filepath.Dir(searchPath)
-			// If popping a searchPath segment got us down to nothing,
+			searchAt = filepath.Dir(searchAt)
+			// If popping a searchAt segment got us down to nothing,
 			//  and we didn't find anything here either,
 			//   that's it: return NotFound.
-			if searchPath == "/" || searchPath == "." {
-				return nil, "", &ErrWorkspaceNotFound{}
+			if searchAt == "/" || searchAt == "." {
+				return nil, "", &ErrWorkspaceNotFound{"", filepath.Join(basisPath, searchPath), basisPath}
 			}
-			// ... otherwise: continue, with popped searchPath.
+			// ... otherwise: continue, with popped searchAt.
 			continue
 		}
 		// You're still here?  That means there's an error, but of some unpleasant kind.
 		//  Whatever this error is, our search has blind spots: error out.
-		return nil, searchPath, &ErrSearchingFilesystem{"workspace", err}
+		return nil, searchAt, &ErrSearchingFilesystem{"workspace", err}
 	}
 }
 
@@ -79,20 +81,22 @@ func FindWorkspace(basisPath, searchPath string) (ws *Workspace, remainingSearch
 // then the search will halt and return ErrModuleNotFound.
 func FindModule(ws *Workspace, basisPath, searchPath string) (*Module, error) {
 	// Our search loops over searchPath, popping a path segment off at the end of every round.
+	//  Keep the given searchPath in hand; we might need it for an error report.
+	searchAt := searchPath
 	for {
-		mod, err := ExpectModule(ws, basisPath, searchPath)
+		mod, err := ExpectModule(ws, basisPath, searchAt)
 		switch err.(type) {
 		case nil: // no error?  found it!
 			return mod, nil
 		case *ErrModuleNotFound: // not found?  oh well.  pop a segment and keep looking.
-			searchPath = filepath.Dir(searchPath)
-			// If popping a searchPath segment got us down to nothing,
+			searchAt = filepath.Dir(searchAt)
+			// If popping a searchAt segment got us down to nothing,
 			//  and we didn't find anything here either,
 			//   that's it: return NotFound.
-			if searchPath == "/" || searchPath == "." {
-				return nil, &ErrModuleNotFound{}
+			if searchAt == "/" || searchAt == "." {
+				return nil, &ErrModuleNotFound{"", filepath.Join(basisPath, searchPath), basisPath}
 			}
-			// ... otherwise: continue, with popped searchPath.
+			// ... otherwise: continue, with popped searchAt.
 		default: // other error?  alarming; keep raising it.
 			return nil, err
 		}
@@ -119,7 +123,7 @@ func ExpectModule(ws *Workspace, basisPath, tryPath string) (*Module, error) {
 		return nil, err
 	}
 	if !match {
-		return nil, &ErrModuleNotFound{}
+		return nil, &ErrModuleNotFound{fullTryPath, "", ""}
 	}
 	return &Module{ws, fullTryPath, "TODO: moduleName computation"}, nil
 }
