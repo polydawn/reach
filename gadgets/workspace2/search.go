@@ -128,7 +128,7 @@ func ExpectModule(ws *Workspace, basisPath, tryPath string) (*Module, error) {
 	return &Module{ws, fullTryPath, "TODO: moduleName computation"}, nil // ... it's disturbing that this cast works.  We should replace that type with a `type ModuleName{ x string }` wrapper type.  I grow tired of Golang's type system... lazyness.  It pushes a lot of boilerplate on to me; if I want any sanity enforcement at all, it rapidly gets almost as bad as java.
 }
 
-// PathContainsModuleIndiactors simply checks if the given path contains
+// PathContainsModuleIndicators simply checks if the given path contains
 // the 'module.tl' file that indicates a module root.
 //
 // This is not very useful on its own (FindModule or ExpectModule are more likely useful),
