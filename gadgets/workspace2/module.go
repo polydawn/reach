@@ -1,5 +1,9 @@
 package workspace
 
+import (
+	api "go.polydawn.net/go-timeless-api"
+)
+
 type Module struct {
 	// A module *is not defined* without a workspace.
 	// The same module config file may be interpreted to produce a different Module object depending on its Workspace.
@@ -9,9 +13,7 @@ type Module struct {
 
 	// The module name is a synthesized property;
 	// it's not present in the module config along, and needs to be determined using info from the Workspace.
-	//
-	// FIXME there's a type for this.
-	name string
+	name api.ModuleName
 }
 
 // Path returns the module's path.
@@ -21,4 +23,8 @@ type Module struct {
 // but it is useful to print in logs and user-facing messages.
 func (mod *Module) Path() string {
 	return mod.path
+}
+
+func (mod *Module) Name() api.ModuleName {
+	return mod.name
 }
