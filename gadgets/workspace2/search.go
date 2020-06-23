@@ -89,14 +89,21 @@ func FindModule(ws *Workspace, basisPath, searchPath string) (*Module, error) {
 		case nil: // no error?  found it!
 			return mod, nil
 		case *ErrModuleNotFound: // not found?  oh well.  pop a segment and keep looking.
+			// Are we at the workspace root?  If so, give up the search.
+			if searchAt == ws.path {
+				return nil, &ErrModuleNotFound{"", filepath.Join(basisPath, searchPath), basisPath}
+			}
+			// Pop a segment off searchAt.
 			searchAt = filepath.Dir(searchAt)
 			// If popping a searchAt segment got us down to nothing,
 			//  and we didn't find anything here either,
 			//   that's it: return NotFound.
+			//  (You probably won't actually encounter this; the workspace root check should always catch things.
+			//   But, defense in depth is good when doing a loop like this.)
 			if searchAt == "/" || searchAt == "." {
 				return nil, &ErrModuleNotFound{"", filepath.Join(basisPath, searchPath), basisPath}
 			}
-			// ... otherwise: continue, with popped searchAt.
+			// ... otherwise: ignore this notfound, and continue, with popped searchAt.
 		default: // other error?  alarming; keep raising it.
 			return nil, err
 		}
@@ -116,7 +123,7 @@ func FindModule(ws *Workspace, basisPath, searchPath string) (*Module, error) {
 func ExpectModule(ws *Workspace, basisPath, tryPath string) (*Module, error) {
 	fullTryPath := filepath.Join(basisPath, tryPath)
 	if !filepath.HasPrefix(fullTryPath, ws.path) {
-		return nil, &ErrNotInWorkspace{}
+		return nil, &ErrNotInWorkspace{ws.path, fullTryPath}
 	}
 	match, err := PathContainsModuleIndicators(fullTryPath)
 	if err != nil {
